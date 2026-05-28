@@ -46,3 +46,9 @@ are all in place and gated.
   (no stored XSS). The static-site CSP is delivered via `<meta http-equiv>` because
   GitHub Pages cannot set HTTP headers; header-only directives are not enforced
   (documented in `SECURITY.md`).
+
+### Deferred
+- Cross-forge mirror, cosign index signing, update webhooks, embeddings backend,
+  and category sharding were scoped in the design review and intentionally deferred
+  (they need external infrastructure that cannot be verified in CI). Each is tracked
+  as a GitHub issue and documented with its trigger in `docs/RUNBOOK.md`.
