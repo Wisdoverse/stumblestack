@@ -12,6 +12,17 @@ symptoms:
 root_cause: "`git reset --hard` overwrites the working tree and index to match the target commit, throwing away uncommitted changes. They are not in any commit, so reflog cannot recover them."
 fix: "Stash or commit first. Use `git stash` or a WIP commit before a hard reset; prefer `git restore`/`git checkout --` for scoped reverts."
 verified_count: 0
+_aliases:
+  - "lost my changes after git reset"
+  - "git reset hard deleted my work"
+  - "recover uncommitted changes after reset"
+severity: wrong-output
+applies_to:
+  product: git
+  tool: reset
+fix_code:
+  language: bash
+  code: "git stash push -m wip   # safety net before a hard reset"
 created: 2026-05-28
 ---
 

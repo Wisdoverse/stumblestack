@@ -8,3 +8,6 @@
 {"query": "await inside forEach does not wait loop finishes early", "expected_ids": ["33d05c96-109e-4f9f-afa9-a87e8782cd74"]}
 {"query": "force push overwrote teammate commits", "expected_ids": ["34cd7f75-ca5d-4054-9610-7d65d4dc5de1"]}
 {"query": "git reset hard lost uncommitted changes", "expected_ids": ["01293083-6896-4daf-b71e-2a8ceb1541c4"]}
+{"query": "lost my changes after git reset", "expected_ids": ["01293083-6896-4daf-b71e-2a8ceb1541c4"]}
+{"query": "stdout print breaks MCP server", "expected_ids": ["d4b238fa-7427-4a75-9f05-4d59dfc9562e"]}
+{"query": "embedding input too long", "expected_ids": ["5ec275fe-5f93-4aba-8d27-9aec68125d4d"]}

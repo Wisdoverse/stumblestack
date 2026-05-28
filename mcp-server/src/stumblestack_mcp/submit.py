@@ -165,10 +165,14 @@ def _frontmatter_yaml(record: dict) -> str:
         "id",
         "title",
         "category",
+        "applies_to",
+        "severity",
         "tags",
         "symptoms",
+        "_aliases",
         "root_cause",
         "fix",
+        "fix_code",
         "agent",
         "model_version",
         "verified_count",
@@ -176,6 +180,7 @@ def _frontmatter_yaml(record: dict) -> str:
         "created",
         "updated",
         "links",
+        "provenance",
     ]
     ordered = {k: record[k] for k in ordered_keys if k in record}
     return yaml.safe_dump(ordered, sort_keys=False, allow_unicode=True, width=120).rstrip()
@@ -290,6 +295,10 @@ def build(
     agent: str | None = None,
     model_version: str | None = None,
     links: list[str] | None = None,
+    severity: str | None = None,
+    applies_to: dict | None = None,
+    fix_code: dict | None = None,
+    aliases: list[str] | None = None,
     schema_url: str | None = None,
 ) -> BuildResult:
     record: dict[str, Any] = {
@@ -303,6 +312,22 @@ def build(
         "verified_count": 0,
         "created": date.today().isoformat(),
     }
+    if severity:
+        record["severity"] = severity.strip()
+    if isinstance(applies_to, dict):
+        scoped = {k: str(v).strip() for k, v in applies_to.items()
+                  if k in ("product", "tool", "surface") and v}
+        if scoped:
+            record["applies_to"] = scoped
+    if isinstance(fix_code, dict) and (fix_code.get("code") or "").strip():
+        fc: dict[str, str] = {"code": str(fix_code["code"]).strip()}
+        if fix_code.get("language"):
+            fc["language"] = str(fix_code["language"]).strip()
+        record["fix_code"] = fc
+    if aliases:
+        cleaned = [a.strip() for a in aliases if a and a.strip()]
+        if cleaned:
+            record["_aliases"] = cleaned
     if agent:
         record["agent"] = agent.strip()
     if model_version:

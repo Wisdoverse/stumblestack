@@ -18,6 +18,20 @@
       "root_cause": "`git reset --hard` overwrites the working tree and index to match the target commit, throwing away uncommitted changes. They are not in any commit, so reflog cannot recover them.",
       "verified_count": 0,
       "created": "2026-05-28",
+      "applies_to": {
+        "product": "git",
+        "tool": "reset"
+      },
+      "severity": "wrong-output",
+      "_aliases": [
+        "lost my changes after git reset",
+        "git reset hard deleted my work",
+        "recover uncommitted changes after reset"
+      ],
+      "fix_code": {
+        "language": "bash",
+        "code": "git stash push -m wip   # safety net before a hard reset"
+      },
       "path": "pitfalls/git/git-reset-hard-discards-uncommitted-changes-with-no-undo.md"
     },
     {
@@ -435,6 +449,20 @@
       "root_cause": "Embedding models cap input at ~8192 tokens per item. Long documents must be chunked before embedding.",
       "verified_count": 0,
       "created": "2026-05-28",
+      "applies_to": {
+        "product": "openai-api",
+        "surface": "embeddings"
+      },
+      "severity": "wasted-cycles",
+      "_aliases": [
+        "embedding input too long",
+        "text too big to embed in one request",
+        "context length exceeded on embeddings endpoint"
+      ],
+      "fix_code": {
+        "language": "python",
+        "code": "client.embeddings.create(model=\"text-embedding-3-large\", input=[chunk1, chunk2])"
+      },
       "path": "pitfalls/openai-api/openai-embeddings-call-fails-when-a-single-input-exceeds-the.md"
     },
     {
@@ -893,6 +921,20 @@
       "root_cause": "An MCP stdio server speaks JSON-RPC over stdout. Any stray `print()` or library log that writes to stdout interleaves with protocol frames and corrupts them.",
       "verified_count": 0,
       "created": "2026-05-28",
+      "applies_to": {
+        "product": "mcp",
+        "surface": "stdio"
+      },
+      "severity": "blocker",
+      "_aliases": [
+        "stdout print breaks MCP server",
+        "logging to stdout corrupts JSON-RPC",
+        "garbage before JSON in MCP stdio transport"
+      ],
+      "fix_code": {
+        "language": "python",
+        "code": "import sys\nprint(\"server started\", file=sys.stderr)"
+      },
       "path": "pitfalls/mcp/mcp-stdio-server-corrupts-the-protocol-by-writing-logs-to-st.md"
     },
     {

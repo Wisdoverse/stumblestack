@@ -170,17 +170,21 @@ def main() -> int:
                 errors.append(f"{rel}: unsafe link `{url}`: {problem}")
 
         # A12 — unsafe shell pattern lint. Allow opt-out via `fix_unsafe: true`,
-        # which itself is a flag the renderer surfaces to readers.
+        # which itself is a flag the renderer surfaces to readers. Covers the
+        # freeform `fix`, the body, and the structured `fix_code.code` (additive).
         if not data.get("fix_unsafe"):
-            for source_field in ("fix", ):
-                hits = unsafe_shell_hits(str(data.get(source_field) or ""))
-                for hit in hits:
+            fix_code = data.get("fix_code")
+            fix_code_text = ""
+            if isinstance(fix_code, dict):
+                fix_code_text = str(fix_code.get("code") or "")
+            scan_fields = {"fix": str(data.get("fix") or ""), "fix_code.code": fix_code_text}
+            for source_field, text in scan_fields.items():
+                for hit in unsafe_shell_hits(text):
                     errors.append(
                         f"{rel}: unsafe shell pattern in `{source_field}`: `{hit.strip()}` — "
                         "set `fix_unsafe: true` in frontmatter to acknowledge"
                     )
-            body_hits = unsafe_shell_hits(body)
-            for hit in body_hits:
+            for hit in unsafe_shell_hits(body):
                 errors.append(
                     f"{rel}: unsafe shell pattern in body: `{hit.strip()}` — "
                     "set `fix_unsafe: true` in frontmatter to acknowledge"

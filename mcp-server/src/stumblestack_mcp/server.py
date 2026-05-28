@@ -51,6 +51,9 @@ def _format_hit(hit) -> dict[str, Any]:
         "agent": e.get("agent"),
         "model_version": e.get("model_version"),
         "verified_count": e.get("verified_count", 0),
+        "severity": e.get("severity"),
+        "applies_to": e.get("applies_to"),
+        "has_fix_code": bool(e.get("fix_code")),
         "path": e.get("path"),
         "score": round(hit.score, 3),
         "matched_terms": hit.matched_terms,
@@ -216,6 +219,34 @@ async def list_tools() -> list[Tool]:
                         "items": {"type": "string"},
                         "description": "Optional upstream issues, docs, or PRs.",
                     },
+                    "severity": {
+                        "type": "string",
+                        "enum": ["blocker", "wrong-output", "wasted-cycles", "minor"],
+                        "description": "Optional severity: blocker | wrong-output | wasted-cycles | minor.",
+                    },
+                    "applies_to": {
+                        "type": "object",
+                        "description": "Optional structured scope: {product?, tool?, surface?}.",
+                        "properties": {
+                            "product": {"type": "string"},
+                            "tool": {"type": "string"},
+                            "surface": {"type": "string"},
+                        },
+                    },
+                    "fix_code": {
+                        "type": "object",
+                        "description": "Optional machine-readable fix: {language?, code}. Treated as a hint, never auto-run.",
+                        "properties": {
+                            "language": {"type": "string"},
+                            "code": {"type": "string"},
+                        },
+                        "required": ["code"],
+                    },
+                    "aliases": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional paraphrased symptom strings to widen recall (stored as _aliases).",
+                    },
                     "dry_run": {
                         "type": "boolean",
                         "default": False,
@@ -314,6 +345,10 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
                 agent=args.get("agent"),
                 model_version=args.get("model_version"),
                 links=args.get("links") or [],
+                severity=args.get("severity"),
+                applies_to=args.get("applies_to"),
+                fix_code=args.get("fix_code"),
+                aliases=args.get("aliases") or [],
             )
             dry = bool(args.get("dry_run"))
             if build_result.errors and not dry:

@@ -25,7 +25,15 @@ from pathlib import Path
 # Vendored copy of the ranker so the harness has no dependency on the installed
 # MCP package. MUST stay in sync with stumblestack_mcp/search.py (DESIGN.md 9c).
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
-FIELD_WEIGHTS = {"title": 3.0, "symptoms": 4.0, "tags": 2.0, "root_cause": 1.5, "category": 1.0}
+FIELD_WEIGHTS = {
+    "title": 3.0,
+    "symptoms": 4.0,
+    "_aliases": 3.5,
+    "tags": 2.0,
+    "root_cause": 1.5,
+    "category": 1.0,
+    "fix_code": 1.0,
+}
 
 
 def _tokens(text: str):
@@ -36,6 +44,8 @@ def _field_text(entry, field):
     v = entry.get(field)
     if v is None:
         return ""
+    if field == "fix_code" and isinstance(v, dict):
+        return f"{v.get('language', '')} {v.get('code', '')}".strip()
     if isinstance(v, list):
         return " ".join(str(x) for x in v)
     return str(v)

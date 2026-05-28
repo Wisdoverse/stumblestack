@@ -13,6 +13,17 @@ symptoms:
 root_cause: "An MCP stdio server speaks JSON-RPC over stdout. Any stray `print()` or library log that writes to stdout interleaves with protocol frames and corrupts them."
 fix: "Send all logging to stderr. Never write non-protocol bytes to stdout in a stdio server."
 verified_count: 0
+_aliases:
+  - "stdout print breaks MCP server"
+  - "logging to stdout corrupts JSON-RPC"
+  - "garbage before JSON in MCP stdio transport"
+severity: blocker
+applies_to:
+  product: mcp
+  surface: stdio
+fix_code:
+  language: python
+  code: "import sys\nprint(\"server started\", file=sys.stderr)"
 created: 2026-05-28
 ---
 

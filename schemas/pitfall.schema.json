@@ -95,6 +95,61 @@
       "type": "boolean",
       "default": false,
       "description": "Acknowledge that the `fix` or body contains shell patterns flagged as dangerous by CI (curl|sh, rm -rf /, etc.). Setting this to true does not make the pattern safe; it surfaces a warning to readers and unblocks merge."
+    },
+    "applies_to": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Structured scope of the pitfall. All sub-keys optional. Additive field (schema_version stays 1 per DESIGN.md 9b).",
+      "properties": {
+        "product": {"type": "string", "description": "Product/family, e.g. claude-code, openai-api."},
+        "tool": {"type": "string", "description": "Specific tool/API, e.g. Edit, Messages API."},
+        "surface": {"type": "string", "description": "Interaction surface, e.g. CLI, streaming."}
+      }
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["blocker", "wrong-output", "wasted-cycles", "minor"],
+      "description": "Single severity classification. blocker > wrong-output > wasted-cycles > minor."
+    },
+    "fix_code": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "description": "Optional machine-readable code form of the fix. Supplements (does not replace) the freeform `fix`; subject to the same unsafe-shell lint. Treated as a hint, never auto-executed (A8).",
+      "properties": {
+        "language": {"type": "string", "description": "Highlight/language hint, e.g. bash, python, json."},
+        "code": {"type": "string", "description": "Verbatim corrective code."}
+      }
+    },
+    "_aliases": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "description": "Paraphrased symptom strings that widen lexical recall. The underscore marks this as a retrieval-only field, not user-facing prose."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Sigstore/GitHub-OIDC-shaped submission provenance. RESERVED and NOT enforced at this version — presence is advisory; validate.py does not verify signatures.",
+      "properties": {
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "github_login": {"type": "string"},
+            "workflow_ref": {"type": "string"},
+            "commit_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+            "run_id": {"type": "string"}
+          }
+        },
+        "signature": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format": {"type": "string", "enum": ["sigstore", "cosign", "none"]},
+            "bundle": {"type": "string", "description": "Base64 sigstore bundle or rekor ref. Opaque at this version."}
+          }
+        }
+      }
     }
   }
 }

@@ -318,18 +318,48 @@ footer a { color: var(--muted); }
   font-weight: 600;
 }
 .category-grid .count { color: var(--muted); margin-left: 0.4rem; font-size: 0.8rem; }
+.sev {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.sev-blocker { background: #b6232722; color: #ff7b72; }
+.sev-wrong-output { background: #9e6a0322; color: #d29922; }
+.sev-wasted-cycles { background: #1f6feb22; color: #79c0ff; }
+.sev-minor { background: var(--code-bg); color: var(--muted); }
+.applies-chip {
+  display: inline-block;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  margin-right: 0.3rem;
+}
+.entry-list .sev { margin-right: 0.3rem; }
 """
 
-SEARCH_JS = r"""// Mirrors stumblestack_mcp/search.py exactly (see docs/DESIGN.md section 9c).
+# The ranker JS — WEIGHTS, tokenizer, fieldText, score — kept byte-identical to
+# stumblestack_mcp/search.py (DESIGN.md 9c). Extracted into its own constant so the
+# embeddable widget (embed.js) reuses the exact same scoring as the site search.
+RANKER_JS = r"""// Mirrors stumblestack_mcp/search.py exactly (see docs/DESIGN.md section 9c).
 // The verified_count bonus is added ONLY when the lexical base score is > 0,
-// and the sort tiebreak is ascending id — both must match search.py or the
-// site ranks entries differently from the MCP server.
-const WEIGHTS = { title: 3.0, symptoms: 4.0, tags: 2.0, root_cause: 1.5, category: 1.0 };
+// and the sort tiebreak is ascending id — both must match search.py.
+const WEIGHTS = { title: 3.0, symptoms: 4.0, _aliases: 3.5, tags: 2.0, root_cause: 1.5, category: 1.0, fix_code: 1.0 };
 const TOKEN_RE = /[a-z0-9]+/g;
 function tokenize(s) { return s.toLowerCase().match(TOKEN_RE) || []; }
 function fieldText(entry, field) {
   const v = entry[field];
   if (v == null) return "";
+  // fix_code is a {language, code} object — flatten to "language code".
+  if (field === "fix_code" && typeof v === "object" && !Array.isArray(v)) {
+    return ((v.language || "") + " " + (v.code || "")).trim();
+  }
   if (Array.isArray(v)) return v.join(" ");
   return String(v);
 }
@@ -353,6 +383,9 @@ function score(entry, terms, rawQuery) {
   s += Math.min(entry.verified_count || 0, 10) * 0.1;
   return { score: s, matched: Array.from(matched) };
 }
+"""
+
+SEARCH_JS = RANKER_JS + r"""
 async function load() {
   const r = await fetch("index.json");
   return (await r.json()).entries || [];
@@ -503,8 +536,29 @@ def _render_tags(tags) -> str:
     return "".join(f'<span class="tag">{_esc(t)}</span>' for t in (tags or []))
 
 
+def _severity_badge(severity) -> str:
+    if not severity:
+        return ""
+    sev = _esc(severity)
+    return f'<span class="sev sev-{sev}">{sev}</span>'
+
+
+def _render_applies_to(applies_to) -> str:
+    if not isinstance(applies_to, dict):
+        return ""
+    chips = [
+        f'<span class="applies-chip">{_esc(label)}: {_esc(applies_to[key])}</span>'
+        for key, label in (("product", "product"), ("tool", "tool"), ("surface", "surface"))
+        if applies_to.get(key)
+    ]
+    return "".join(chips)
+
+
 def _render_frontmatter(record: dict) -> str:
     rows: list[str] = []
+    if record.get("severity"):
+        rows.append(f"<div><dt>severity</dt><dd>{_severity_badge(record['severity'])}</dd></div>")
+
     field_order = (
         ("id", "id"),
         ("agent", "agent"),
@@ -519,13 +573,29 @@ def _render_frontmatter(record: dict) -> str:
             continue
         rows.append(f"<div><dt>{label}</dt><dd>{_esc(record[key])}</dd></div>")
 
+    applies_html = _render_applies_to(record.get("applies_to"))
+    if applies_html:
+        rows.append(f"<div><dt>applies to</dt><dd>{applies_html}</dd></div>")
+
     if record.get("symptoms"):
         sym_html = "<br>".join(f"<code>{_esc(s)}</code>" for s in record["symptoms"])
         rows.append(f"<div><dt>symptoms</dt><dd>{sym_html}</dd></div>")
+    if record.get("_aliases"):
+        alias_html = "<br>".join(f"<code>{_esc(a)}</code>" for a in record["_aliases"])
+        rows.append(f"<div><dt>also matches</dt><dd>{alias_html}</dd></div>")
     if record.get("root_cause"):
         rows.append(f"<div><dt>root cause</dt><dd>{_esc(record['root_cause'])}</dd></div>")
     if record.get("fix"):
         rows.append(f"<div><dt>fix</dt><dd>{_esc(record['fix'])}</dd></div>")
+    # G3/C3: fix_code is frontmatter-sourced and bypasses the markdown bleach pass,
+    # so it MUST be html-escaped here. Never emit it raw.
+    fix_code = record.get("fix_code")
+    if isinstance(fix_code, dict) and fix_code.get("code"):
+        lang = _esc(fix_code.get("language") or "")
+        code = _esc(fix_code["code"])
+        rows.append(
+            f'<div><dt>fix code</dt><dd><pre><code class="language-{lang}">{code}</code></pre></dd></div>'
+        )
     if record.get("links"):
         link_html = "<br>".join(
             f'<a href="{_esc(l)}" rel="noopener">{_esc(l)}</a>' for l in record["links"]

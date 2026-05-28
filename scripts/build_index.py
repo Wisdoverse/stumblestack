@@ -39,6 +39,13 @@ INDEX_FIELDS = (
     "created",
     "updated",
     "fix_unsafe",
+    # Additive schema fields (schema_version stays 1, DESIGN.md 9b). fix_code is
+    # projected so the ranker can up-weight code-shaped fixes; raw `fix`/`links`
+    # remain body-only and out of the index.
+    "applies_to",
+    "severity",
+    "_aliases",
+    "fix_code",
 )
 
 
