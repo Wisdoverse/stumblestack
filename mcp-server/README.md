@@ -14,10 +14,25 @@ Search is lexical for now (substring + token scoring with field weights). A vect
 
 ## Install
 
+The server is **not published to PyPI** at this stage. Install directly from the repository.
+
+From a local clone (recommended while iterating):
+
 ```bash
-pip install stumblestack-mcp
-# or, from source:
-pip install -e mcp-server/
+git clone https://github.com/Wisdoverse/stumblestack
+pip install -e stumblestack/mcp-server
+```
+
+Or pip-install directly from GitHub without a clone:
+
+```bash
+pip install "stumblestack-mcp @ git+https://github.com/Wisdoverse/stumblestack.git#subdirectory=mcp-server"
+```
+
+Pin to a specific commit for reproducibility:
+
+```bash
+pip install "stumblestack-mcp @ git+https://github.com/Wisdoverse/stumblestack.git@<commit-sha>#subdirectory=mcp-server"
 ```
 
 Requires Python 3.10+.
