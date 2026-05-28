@@ -434,6 +434,65 @@ function escapeHtml(s) {
 """
 
 
+# A32 — embeddable widget served at stumblestack.dev/embed.js. A third-party page
+# adds: <script src="https://stumblestack.dev/embed.js" data-query="..."></script>
+# It fetches the public index, ranks with the SAME RANKER_JS as the site/server,
+# and renders the top matches. Built with createElement/textContent ONLY — no
+# innerHTML, no eval, no document.write — so it is safe under a strict host CSP.
+EMBED_JS = RANKER_JS + r"""
+(function () {
+  var BASE = "https://stumblestack.dev";
+  var current = document.currentScript;
+  function el(tag, attrs, text) {
+    var n = document.createElement(tag);
+    if (attrs) for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function rank(entries, query, topK) {
+    var terms = tokenize(query), raw = query.toLowerCase().trim();
+    if (!terms.length && !raw) return [];
+    return entries.map(function (e) { return { e: e, r: score(e, terms, raw) }; })
+      .filter(function (x) { return x.r.score > 0; })
+      .sort(function (a, b) { return b.r.score - a.r.score || String(a.e.id).localeCompare(String(b.e.id)); })
+      .slice(0, topK).map(function (x) { return x.e; });
+  }
+  function render(container, results) {
+    container.textContent = "";
+    var box = el("div", { "class": "stumblestack-embed" });
+    box.appendChild(el("a", { href: BASE, target: "_blank", rel: "noopener" }, "stumblestack"));
+    var ul = el("ul");
+    if (!results.length) {
+      ul.appendChild(el("li", null, "no related pitfalls"));
+    } else {
+      results.forEach(function (e) {
+        var li = el("li");
+        li.appendChild(el("a", { href: BASE + "/p/" + encodeURIComponent(e.id) + ".html",
+                                 target: "_blank", rel: "noopener" }, e.title || e.id));
+        if (e.category) { li.appendChild(document.createTextNode(" ")); li.appendChild(el("em", null, e.category)); }
+        ul.appendChild(li);
+      });
+    }
+    box.appendChild(ul);
+    container.appendChild(box);
+  }
+  function init() {
+    var script = current || document.querySelector('script[src$="embed.js"]');
+    if (!script) return;
+    var query = script.getAttribute("data-query") || "";
+    var topK = parseInt(script.getAttribute("data-limit") || "5", 10) || 5;
+    var mount = el("div", { "class": "stumblestack-embed-root" });
+    script.parentNode.insertBefore(mount, script.nextSibling);
+    fetch(BASE + "/api/v1/index.json").then(function (r) { return r.json(); })
+      .then(function (idx) { render(mount, rank(idx.entries || [], query, topK)); })
+      .catch(function () { render(mount, []); });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+"""
+
+
 HOMEPAGE_TEMPLATE = """<!doctype html>
 <html lang="en">
 <head>
@@ -635,6 +694,8 @@ def build(root: Path, out: Path) -> int:
 
     (out / "assets" / "style.css").write_text(CSS.strip() + "\n", encoding="utf-8")
     (out / "assets" / "search.js").write_text(SEARCH_JS.strip() + "\n", encoding="utf-8")
+    # A32 — embeddable widget at the top level (third parties reference /embed.js).
+    (out / "embed.js").write_text(EMBED_JS.strip() + "\n", encoding="utf-8")
 
     shutil.copy(index_path, out / "index.json")
     shutil.copy(index_path, out / "api" / "v1" / "index.json")

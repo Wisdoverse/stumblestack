@@ -95,6 +95,20 @@ Aggregate corpus statistics, rebuilt on every deploy and nightly. Unversioned
 }
 ```
 
+### `GET /embed.js`
+
+A dependency-free embeddable widget. Drop it on any page to show related
+pitfalls for a query:
+
+```html
+<script src="https://stumblestack.dev/embed.js" data-query="max_tokens" data-limit="5"></script>
+```
+
+It fetches `/api/v1/index.json`, ranks client-side with the same lexical ranker
+as the site and MCP server, and renders the top matches into a container it
+inserts after the script tag. It builds DOM with `createElement`/`textContent`
+only (no `innerHTML`/`eval`), so it is safe to include under a strict CSP.
+
 ## Caching
 
 All endpoints are static files served by Fastly. Default cache TTL is GitHub Pages' default (10 minutes). Clients should respect `ETag` / `Last-Modified` and not poll more aggressively than the document changes.

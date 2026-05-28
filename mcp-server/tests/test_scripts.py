@@ -157,6 +157,31 @@ def test_validate_allows_unsafe_shell_with_flag(tmp_path):
     assert r.returncode == 0, r.stdout + r.stderr
 
 
+# ── embed.js widget (A32) ──
+def test_embed_js_is_dom_only():
+    # No XSS-prone sinks: the widget must build DOM via createElement/textContent.
+    js = build_site.EMBED_JS
+    for sink in ("innerHTML", "eval(", "new Function", "document.write", "outerHTML"):
+        assert sink not in js, f"embed.js must not use {sink}"
+
+
+def test_embed_js_shares_ranker():
+    # Same scoring as the site/server: it embeds the RANKER_JS block verbatim.
+    assert build_site.RANKER_JS in build_site.EMBED_JS
+    assert "_aliases: 3.5" in build_site.EMBED_JS and "fix_code: 1.0" in build_site.EMBED_JS
+
+
+def test_embed_js_written_at_top_level(tmp_path):
+    _seed_repo(tmp_path)
+    _write_pitfall(tmp_path, "git", "e", pid="ee111111-1111-4111-8111-111111111111")
+    subprocess.run([sys.executable, str(SCRIPTS / "build_index.py"), "--root", str(tmp_path)],
+                   check=True, capture_output=True, text=True)
+    out = tmp_path / "_site"
+    subprocess.run([sys.executable, str(SCRIPTS / "build_site.py"), "--root", str(tmp_path),
+                    "--out", str(out)], check=True, capture_output=True, text=True)
+    assert (out / "embed.js").exists()
+
+
 # ── build_index projection + determinism ──
 def test_build_index_projection_and_sort(tmp_path):
     _seed_repo(tmp_path)
