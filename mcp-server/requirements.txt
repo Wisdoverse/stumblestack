@@ -1,7 +1,7 @@
 # MCP server runtime pins. Dependabot opens PRs against this file weekly.
 # `pyproject.toml` keeps the looser >= constraints for library users;
 # this file is the recommended install set for CI and local development.
-mcp==1.27.0
+mcp==1.27.1
 httpx==0.28.1
 PyYAML==6.0.3
 jsonschema==4.26.0
