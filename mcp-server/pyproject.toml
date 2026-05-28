@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stumblestack-mcp"
+version = "0.1.0"
+description = "MCP server exposing the stumblestack agent-pitfall knowledge base"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "CC0-1.0"
+authors = [{ name = "Wisdoverse", email = "dev@wisdoverse.com" }]
+dependencies = [
+  "mcp>=1.2.0",
+  "httpx>=0.27.0",
+]
+
+[project.scripts]
+stumblestack-mcp = "stumblestack_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stumblestack_mcp"]

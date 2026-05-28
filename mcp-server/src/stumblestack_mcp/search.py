@@ -1,0 +1,98 @@
+"""Lexical search over the stumblestack index.
+
+No embeddings yet — simple tokenized substring matching with field weights.
+Designed to be replaced by a vector backend later without changing the public surface.
+"""
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from typing import Iterable
+
+_TOKEN_RE = re.compile(r"[a-z0-9]+")
+
+
+def _tokenize(text: str) -> list[str]:
+    return _TOKEN_RE.findall(text.lower())
+
+
+def _field_text(entry: dict, field: str) -> str:
+    value = entry.get(field)
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return " ".join(str(v) for v in value)
+    return str(value)
+
+
+FIELD_WEIGHTS: dict[str, float] = {
+    "title": 3.0,
+    "symptoms": 4.0,
+    "tags": 2.0,
+    "root_cause": 1.5,
+    "category": 1.0,
+}
+
+
+@dataclass(frozen=True)
+class Hit:
+    entry: dict
+    score: float
+    matched_terms: list[str]
+
+
+def search(
+    entries: Iterable[dict],
+    query: str,
+    *,
+    category: str | None = None,
+    top_k: int = 5,
+    model: str | None = None,
+) -> list[Hit]:
+    """Score entries against a free-text query.
+
+    Scoring: for each term, sum (field weight * occurrences) across weighted fields.
+    Substring matches in raw text contribute a small bonus to catch error fragments
+    that don't tokenize cleanly (e.g. "old_string").
+    """
+    terms = _tokenize(query)
+    raw_query = query.lower().strip()
+    if not terms and not raw_query:
+        return []
+
+    hits: list[Hit] = []
+    for entry in entries:
+        if category and entry.get("category") != category:
+            continue
+        if model and entry.get("model_version") and entry["model_version"] != model:
+            continue
+
+        score = 0.0
+        matched: set[str] = set()
+
+        for field, weight in FIELD_WEIGHTS.items():
+            field_text = _field_text(entry, field)
+            if not field_text:
+                continue
+            field_tokens = _tokenize(field_text)
+            field_lower = field_text.lower()
+
+            for term in terms:
+                count = field_tokens.count(term)
+                if count:
+                    score += weight * count
+                    matched.add(term)
+
+            if raw_query and raw_query in field_lower:
+                score += weight * 2.0
+
+        if score <= 0:
+            continue
+
+        verified = entry.get("verified_count") or 0
+        score += min(verified, 10) * 0.1
+
+        hits.append(Hit(entry=entry, score=score, matched_terms=sorted(matched)))
+
+    hits.sort(key=lambda h: (-h.score, h.entry.get("id", "")))
+    return hits[:top_k]
