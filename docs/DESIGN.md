@@ -110,7 +110,13 @@ What is explicitly *not* trusted at v0.1: the `fix` field. It is freeform text. 
   - `pages.yml` on `main` push: validates, rebuilds index, runs `build_site.py`, deploys `_site/` to Pages.
 - **Runtime:** zero. The MCP server is a Python package installed and run by each client; it has no shared state.
 - **Distribution:** the MCP server is **not published to PyPI** at v0.1. Installation is via `pip install -e mcp-server/` from a local clone, or `pip install "stumblestack-mcp @ git+https://github.com/Wisdoverse/stumblestack.git#subdirectory=mcp-server"` (optionally pinned to a commit SHA for reproducibility). A PyPI release is deferred until the schema and tool surface are stable enough that registry-level versioning carries useful semantics.
-- **Observability:** none yet. No counters, no query log, no submission rate metrics.
+- **Observability:** two opt-in, privacy-preserving mechanisms. (1) A public aggregate
+  `stumblestack.dev/_stats.json` (total entries, last-updated, per-category counts, top
+  tags, severity breakdown, verified count) rebuilt deterministically by
+  `scripts/build_stats.py` on every Pages deploy and on a nightly cron. (2) Opt-in MCP
+  server telemetry (`STUMBLESTACK_TELEMETRY`, default off) emitting one PII-free
+  structured line per tool call to stderr. No query text, ids, or user content are
+  recorded anywhere.
 - **DR:** the entire system is recoverable from any clone of the repository — including `index.json`, since it is regenerable.
 
 ## 8. Roadmap markers (not part of v0.1)

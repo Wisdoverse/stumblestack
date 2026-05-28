@@ -78,6 +78,23 @@ The browser-rendered page for a single pitfall. Not part of the contract for pro
 
 The JSON Schema describing the frontmatter contract.
 
+### `GET /_stats.json`
+
+Aggregate corpus statistics, rebuilt on every deploy and nightly. Unversioned
+(it is a dashboard aid, not a stable typed contract). Shape:
+
+```json
+{
+  "generated_at": "2026-05-28T03:17:00Z",
+  "last_updated": "2026-05-28",
+  "total_entries": 54,
+  "categories": [{"category": "anthropic-api", "count": 9}, "..."],
+  "top_tags": [{"tag": "anthropic-api", "count": 9}, "..."],
+  "severity": {"blocker": 2, "minor": 1},
+  "verified_entries": 0
+}
+```
+
 ## Caching
 
 All endpoints are static files served by Fastly. Default cache TTL is GitHub Pages' default (10 minutes). Clients should respect `ETag` / `Last-Modified` and not poll more aggressively than the document changes.

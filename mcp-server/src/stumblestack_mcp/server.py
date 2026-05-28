@@ -5,12 +5,14 @@ import asyncio
 import json
 import logging
 import os
+import time
 from typing import Any
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
+from . import telemetry
 from .search import search
 from .source import StumblestackSource
 from .submit import SubmitError, redact
@@ -261,8 +263,46 @@ async def list_tools() -> list[Tool]:
     ]
 
 
+def _result_count(result: list[TextContent] | None) -> int | None:
+    """Best-effort count of items in a tool result, for telemetry only (no content)."""
+    if not result:
+        return None
+    try:
+        payload = json.loads(result[0].text)
+    except (ValueError, AttributeError, IndexError):
+        return None
+    if isinstance(payload, dict):
+        if isinstance(payload.get("count"), int):
+            return payload["count"]
+        if isinstance(payload.get("results"), list):
+            return len(payload["results"])
+    return None
+
+
 @server.call_tool()
 async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextContent]:
+    # Thin timing/telemetry wrapper around _dispatch. Telemetry is opt-in and
+    # PII-free; emission is fail-open and never alters the result.
+    start = time.monotonic()
+    ok = True
+    result: list[TextContent] | None = None
+    try:
+        result = await _dispatch(name, arguments)
+        return result
+    except Exception:
+        ok = False
+        raise
+    finally:
+        telemetry.emit(
+            name,
+            latency_ms=(time.monotonic() - start) * 1000.0,
+            result_count=_result_count(result),
+            cache_age_seconds=source.cache_age_seconds(),
+            ok=ok,
+        )
+
+
+async def _dispatch(name: str, arguments: dict[str, Any] | None) -> list[TextContent]:
     args = arguments or {}
     try:
         if name == "search_pitfalls":

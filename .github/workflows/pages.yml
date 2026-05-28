@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Nightly rebuild so _stats.json's generated_at stays fresh even with no commits.
+    - cron: "17 3 * * *"
 
 permissions:
   contents: read
@@ -38,6 +41,9 @@ jobs:
 
       - name: Build static site
         run: python scripts/build_site.py --out _site
+
+      - name: Build aggregate stats (_stats.json)
+        run: python scripts/build_stats.py --now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out _site/_stats.json
 
       - name: Disable Jekyll
         run: touch _site/.nojekyll
