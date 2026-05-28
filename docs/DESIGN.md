@@ -136,6 +136,47 @@ These are noted so reviewers know they are deliberately deferred:
 
 These are illustrative until the review confirms or revises them.
 
+## 9b. Schema evolution policy (A7)
+
+The schema is identified by the integer `schema_version` field in `index.json` (currently `1`). Changes follow these rules:
+
+- **Additive (no version bump).** New optional frontmatter fields, new optional fields in nested objects, new enum members, looser numeric/string constraints. CI accepts; older consumers ignore the new field.
+- **Renames / removals / type changes / new required fields.** Major version bump. The new schema lives at `schemas/v<n>/pitfall.schema.json` and ships alongside a parallel `index-v<n>.json`. The old index continues to be regenerated for at least 90 days (see API.md deprecation policy).
+- **Field semantics change without syntactic change.** Treat as a major bump. Reserved field names are not silently reinterpreted.
+- **`schema_version` in `index.json`** is incremented at the same commit that introduces the new index file. Consumers branch on `schema_version` to pick a parser.
+
+Reviewing maintainers MUST cite this section when approving a schema-touching PR.
+
+## 9c. Ranker contract (A16)
+
+The lexical ranker is identical on the server (`stumblestack_mcp.search`) and in the browser (`_site/assets/search.js`). Both implementations must produce the same scoring on the same `index.json`; a divergence is a bug.
+
+Tokenizer: lowercase the query, take all `[a-z0-9]+` runs as terms.
+
+Per-entry score formula:
+
+```
+score = sum over (field, weight) of:
+          weight * (# of times each query term appears as a whole token in field)
+        + sum over fields of:
+          weight * 2.0 if raw_lowercased_query is a substring of the field text
+        + min(verified_count, 10) * 0.1
+```
+
+Field weights:
+
+| Field        | Weight |
+|--------------|--------|
+| `symptoms`   | 4.0    |
+| `title`      | 3.0    |
+| `tags`       | 2.0    |
+| `root_cause` | 1.5    |
+| `category`   | 1.0    |
+
+Tiebreak: ascending by `id`. Empty query returns no hits.
+
+Reviewing maintainers MUST cite this section when approving a `search.py` or `search.js` change, and MUST report `precision@5` / `recall@10` against `eval/queries.jsonl` once that eval set exists (A13).
+
 ## 10. Open questions
 
 1. What is the policy when a `fix` is wrong and dangerous? (Subject to security review.)

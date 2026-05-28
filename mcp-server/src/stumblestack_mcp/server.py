@@ -59,8 +59,10 @@ async def list_tools() -> list[Tool]:
             description=(
                 "Search the stumblestack knowledge base of agent pitfalls. "
                 "Pass an error message, symptom, or short description of what went wrong. "
-                "Returns ranked matches with id, title, root cause, and fix metadata. "
-                "Use get_pitfall(id) to retrieve the full markdown including reproduction and fix details."
+                "Returns ranked matches with id, title, root cause, and fix metadata, plus a "
+                "`cache_age_seconds` field so you know how fresh the index is. "
+                "Use get_pitfall(id) to retrieve the full markdown including reproduction and fix details. "
+                "Example: search_pitfalls(query='Edit failed: string not found', category='claude-code', top_k=3)."
             ),
             inputSchema={
                 "type": "object",
@@ -106,7 +108,11 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="list_categories",
-            description="List all categories present in the index, with entry counts.",
+            description=(
+                "List all categories present in the index, with entry counts. "
+                "Useful as a first call so you know the available filter values before searching. "
+                "Returns e.g. [{\"category\": \"claude-code\", \"count\": 12}, ...]."
+            ),
             inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
         ),
         Tool(
@@ -201,6 +207,7 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
                 "query": query,
                 "count": len(hits),
                 "origin": source.origin(),
+                "cache_age_seconds": source.cache_age_seconds(),
                 "results": [_format_hit(h) for h in hits],
             }
             return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
@@ -218,6 +225,7 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
                 "record": record,
                 "markdown": body,
                 "origin": source.origin(),
+                "cache_age_seconds": source.cache_age_seconds(),
             }
             return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
 
@@ -293,8 +301,11 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
             idx = source.index()
             payload = {
                 "origin": source.origin(),
+                "mirrors": source.mirrors(),
                 "schema_version": idx.get("schema_version"),
                 "count": idx.get("count", 0),
+                "cache_age_seconds": source.cache_age_seconds(),
+                "ttl_seconds": source.ttl_seconds,
             }
             return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
 

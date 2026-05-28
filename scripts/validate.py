@@ -147,6 +147,20 @@ def main() -> int:
             loc = ".".join(str(p) for p in err.absolute_path) or "<root>"
             errors.append(f"{rel}: schema: {loc}: {err.message}")
 
+        # A11 — verified_count is derived from verification_prs when present.
+        vps = data.get("verification_prs")
+        vcount = data.get("verified_count")
+        if vps is not None:
+            verifiers = [str(p.get("verifier") or p.get("repo") or i) for i, p in enumerate(vps)]
+            if len(set(verifiers)) != len(verifiers):
+                errors.append(
+                    f"{rel}: verification_prs contains duplicate verifiers; each entry must be from a distinct submitter"
+                )
+            if vcount is not None and int(vcount) != len(vps):
+                errors.append(
+                    f"{rel}: verified_count ({vcount}) does not match len(verification_prs) ({len(vps)})"
+                )
+
         # A39 — link safety
         for url in data.get("links", []) or []:
             problem = link_problem(str(url))

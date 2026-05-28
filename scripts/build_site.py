@@ -535,14 +535,19 @@ def build(root: Path, out: Path) -> int:
     (out / "p").mkdir()
     (out / "assets").mkdir()
     (out / "schemas").mkdir()
+    (out / "pitfalls").mkdir()
+    (out / "api" / "v1").mkdir(parents=True)
+    (out / "api" / "v1" / "p").mkdir()
 
     (out / "assets" / "style.css").write_text(CSS.strip() + "\n", encoding="utf-8")
     (out / "assets" / "search.js").write_text(SEARCH_JS.strip() + "\n", encoding="utf-8")
 
     shutil.copy(index_path, out / "index.json")
+    shutil.copy(index_path, out / "api" / "v1" / "index.json")
     schema_src = root / "schemas" / "pitfall.schema.json"
     if schema_src.exists():
         shutil.copy(schema_src, out / "schemas" / "pitfall.schema.json")
+        shutil.copy(schema_src, out / "api" / "v1" / "pitfall.schema.json")
 
     # category counts
     counts: dict[str, int] = {}
@@ -587,6 +592,24 @@ def build(root: Path, out: Path) -> int:
             source_path=_esc(source_rel),
         )
         (out / "p" / f"{pid}.html").write_text(rendered, encoding="utf-8")
+
+        # A18 — publish the raw pitfall markdown at the same path the repo uses,
+        # so the canonical `stumblestack.dev/pitfalls/<cat>/<slug>.md` URL resolves
+        # without hitting raw.githubusercontent.com.
+        mirror_path = out / source_rel
+        mirror_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(src, mirror_path)
+
+        # A30 — JSON representation of a single record under the versioned API path.
+        api_payload = {
+            "schema_version": index.get("schema_version", 1),
+            "record": frontmatter,
+            "source_path": source_rel,
+        }
+        (out / "api" / "v1" / "p" / f"{pid}.json").write_text(
+            json.dumps(api_payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
 
     print(f"wrote {out} ({len(entries)} entries, {len(category_items)} categories)")
     return 0

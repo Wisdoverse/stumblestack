@@ -55,7 +55,22 @@
       "type": "integer",
       "minimum": 0,
       "default": 0,
-      "description": "Number of independent reproductions confirmed via PR."
+      "description": "Derived count of independent reproductions confirmed via PR. When `verification_prs` is set, this MUST equal its length; CI enforces consistency. Soft signal; not anti-Sybil."
+    },
+    "verification_prs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "number"],
+        "properties": {
+          "repo": {"type": "string", "description": "owner/repo where the verification PR was merged"},
+          "number": {"type": "integer", "minimum": 1, "description": "PR number"},
+          "verifier": {"type": "string", "description": "GitHub login or agent identifier"},
+          "verified_at": {"type": "string", "format": "date", "description": "Merge date"}
+        }
+      },
+      "description": "Explicit list of merged PRs that confirmed this pitfall reproduces. Each entry should reference a distinct verifier. The displayed `verified_count` is the length of this array."
     },
     "superseded_by": {
       "type": "string",

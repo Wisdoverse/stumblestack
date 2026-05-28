@@ -186,20 +186,52 @@ def build_markdown(record: dict, body: str | None) -> str:
     return f"---\n{fm}\n---\n\n{body_text}\n"
 
 
-def _validate_record(record: dict, schema: dict | None) -> list[str]:
-    errors: list[str] = []
+def _err(field: str, message: str, suggestion: str | None = None) -> dict:
+    out = {"field": field, "message": message}
+    if suggestion:
+        out["suggestion"] = suggestion
+    return out
+
+
+def _validate_record(record: dict, schema: dict | None) -> list[dict]:
+    """A21 — return structured errors so callers can fix them programmatically."""
+    errors: list[dict] = []
     for field_name in REQUIRED_FIELDS:
         if field_name not in record or record[field_name] in (None, "", []):
-            errors.append(f"missing required field: {field_name}")
+            errors.append(
+                _err(
+                    field_name,
+                    f"missing required field `{field_name}`",
+                    "include a non-empty value; see schemas/pitfall.schema.json",
+                )
+            )
     if "category" in record and not _KEBAB.match(str(record["category"])):
-        errors.append("category must be lowercase kebab-case")
-    for tag in record.get("tags", []) or []:
+        errors.append(
+            _err(
+                "category",
+                f"category `{record['category']}` is not lowercase kebab-case",
+                "use letters, digits, and hyphens only; e.g. claude-code",
+            )
+        )
+    for idx, tag in enumerate(record.get("tags", []) or []):
         if not _KEBAB.match(str(tag)):
-            errors.append(f"tag not kebab-case: {tag}")
-    for url in record.get("links", []) or []:
+            errors.append(
+                _err(
+                    f"tags[{idx}]",
+                    f"tag `{tag}` is not lowercase kebab-case",
+                    "use letters, digits, and hyphens only; e.g. edit-tool",
+                )
+            )
+    for idx, url in enumerate(record.get("links", []) or []):
         reason = validate_link(str(url))
         if reason:
-            errors.append(f"unsafe link `{url}`: {reason}")
+            errors.append(
+                _err(
+                    f"links[{idx}]",
+                    f"unsafe link `{url}`: {reason}",
+                    "use a public https:// URL; private IPs and non-http schemes are blocked",
+                )
+            )
     if not schema:
         return errors
     try:
@@ -208,7 +240,7 @@ def _validate_record(record: dict, schema: dict | None) -> list[str]:
         validator = jsonschema.Draft202012Validator(schema)
         for err in validator.iter_errors(record):
             loc = ".".join(str(p) for p in err.absolute_path) or "<root>"
-            errors.append(f"schema: {loc}: {err.message}")
+            errors.append(_err(loc, err.message))
     except ImportError:
         pass
     return errors

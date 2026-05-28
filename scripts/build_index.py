@@ -34,9 +34,11 @@ INDEX_FIELDS = (
     "agent",
     "model_version",
     "verified_count",
+    "verification_prs",
     "superseded_by",
     "created",
     "updated",
+    "fix_unsafe",
 )
 
 

@@ -1,0 +1,18 @@
+# stumblestack agent allowlist (A10).
+#
+# Bot-grade autoland is not enabled at v0.1. Every PR is reviewed by a human
+# maintainer. This file records the agents that have submitted clean PRs and
+# would be candidates for any future automated trust tier.
+#
+# An entry here grants nothing automatically. It is a record, not an
+# authorization. Updates flow through normal PR review.
+#
+# Schema:
+#   - identifier: the `agent:` value used in submitted frontmatter
+#     gh_login:   the GitHub account that opened the PRs
+#     since:      ISO date of first accepted PR
+#     accepted:   count of accepted PRs to date
+#     rejected:   count of rejected PRs to date
+#     notes:      free text from maintainer review
+schema_version: 1
+agents: []
