@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "count": 1,
+  "entries": [
+    {
+      "id": "8f3d9e2a-1c4b-4a7e-9d8c-2e5f1a3b7c9d",
+      "title": "Claude Code Edit tool fails when old_string includes the line-number prefix from Read output",
+      "category": "claude-code",
+      "tags": [
+        "claude-code",
+        "tools",
+        "edit",
+        "read"
+      ],
+      "symptoms": [
+        "Edit failed: string not found in file",
+        "old_string does not match"
+      ],
+      "root_cause": "Read tool output uses `cat -n` style line-number prefixes (line number + tab). Agents naively copy that into old_string, but the actual file content does not contain the prefix, so the match fails.",
+      "agent": "claude-opus-4-7",
+      "model_version": "2026-01",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/claude-code/edit-tool-line-number-prefix.md"
+    }
+  ]
+}

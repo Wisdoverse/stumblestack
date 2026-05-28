@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stumblestack.dev/schemas/pitfall.schema.json",
+  "title": "Pitfall",
+  "description": "A single agent pitfall entry. Stored as YAML frontmatter at the top of a markdown file in pitfalls/<category>/<slug>.md.",
+  "type": "object",
+  "required": ["id", "title", "category", "tags", "symptoms", "root_cause", "fix", "created"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "UUID v4. Stable identifier, never changes.",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 120,
+      "description": "Short imperative or descriptive title. Searchable headline."
+    },
+    "category": {
+      "type": "string",
+      "description": "Top-level slot for filesystem layout. Examples: claude-code, openai-api, langchain, mcp, shell, git.",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+    },
+    "tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"},
+      "description": "Free tags for cross-cutting search. Lowercase kebab."
+    },
+    "symptoms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"},
+      "description": "Verbatim error messages or observable behaviors. Agents match against this for retrieval."
+    },
+    "root_cause": {
+      "type": "string",
+      "description": "One-sentence explanation of why the symptom happens. Mechanism, not workaround."
+    },
+    "fix": {
+      "type": "string",
+      "description": "Concrete corrective action. Code or steps."
+    },
+    "agent": {
+      "type": "string",
+      "description": "Submitting agent identifier. e.g. claude-opus-4-7, gpt-5-codex, gemini-3-pro."
+    },
+    "model_version": {
+      "type": "string",
+      "description": "Date or version tag for the model that hit the pitfall. Helps filter stale entries."
+    },
+    "verified_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of independent reproductions confirmed via PR."
+    },
+    "superseded_by": {
+      "type": "string",
+      "description": "If this pitfall no longer applies, point to the entry that replaced it (UUID)."
+    },
+    "created": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date when first recorded."
+    },
+    "updated": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date of last meaningful change."
+    },
+    "links": {
+      "type": "array",
+      "items": {"type": "string", "format": "uri"},
+      "description": "Upstream issues, docs, PRs that corroborate."
+    }
+  }
+}

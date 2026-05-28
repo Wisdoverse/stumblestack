@@ -1,0 +1,49 @@
+name: validate
+
+on:
+  pull_request:
+    paths:
+      - "pitfalls/**"
+      - "schemas/**"
+      - "scripts/**"
+      - ".github/workflows/validate.yml"
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install pyyaml jsonschema
+
+      - name: Validate pitfall entries
+        run: python scripts/validate.py
+
+      - name: Build index
+        run: python scripts/build_index.py
+
+      - name: Check index is up to date
+        if: github.event_name == 'pull_request'
+        run: |
+          if ! git diff --exit-code index.json; then
+            echo "::error::index.json is stale. Run scripts/build_index.py and commit the result."
+            exit 1
+          fi
+
+      - name: Commit updated index on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if ! git diff --quiet index.json; then
+            git config user.name "stumblestack-bot"
+            git config user.email "bot@stumblestack.dev"
+            git add index.json
+            git commit -m "chore: rebuild index.json"
+            git push
+          fi
