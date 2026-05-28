@@ -13,6 +13,8 @@ authors = [{ name = "Wisdoverse", email = "dev@wisdoverse.com" }]
 dependencies = [
   "mcp>=1.2.0",
   "httpx>=0.27.0",
+  "pyyaml>=6.0",
+  "jsonschema>=4.21.0",
 ]
 
 [project.scripts]

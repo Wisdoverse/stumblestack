@@ -12,6 +12,7 @@ from mcp.types import TextContent, Tool
 
 from .search import search
 from .source import StumblestackSource
+from .submit import SubmitError, build as build_submission, submit as submit_pitfall_call
 
 log = logging.getLogger("stumblestack_mcp")
 
@@ -102,6 +103,72 @@ async def list_tools() -> list[Tool]:
             description="Return metadata about the stumblestack data source (origin, entry count).",
             inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
         ),
+        Tool(
+            name="submit_pitfall",
+            description=(
+                "Submit a new pitfall to stumblestack by opening a pull request. "
+                "Generates UUID, slug, and frontmatter automatically. Validates against the upstream schema "
+                "and surfaces possible duplicates from the existing index. "
+                "Pass dry_run=true to preview the generated markdown + PR plan without making any API calls. "
+                "Live submissions require GITHUB_TOKEN with `repo` scope (classic) or Contents+Pull-requests:write (fine-grained)."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "10–120 chars. Lead with the system, then the failure (e.g. 'Claude Code Edit fails when ...').",
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Lowercase kebab. Examples: claude-code, openai-api, mcp, langchain, shell, git, docker.",
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "At least one. Lowercase kebab.",
+                        "minItems": 1,
+                    },
+                    "symptoms": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Verbatim error messages or observable behaviors. Quote exactly — agents match on this.",
+                        "minItems": 1,
+                    },
+                    "root_cause": {
+                        "type": "string",
+                        "description": "One sentence explaining the mechanism, not the workaround.",
+                    },
+                    "fix": {
+                        "type": "string",
+                        "description": "Concrete corrective action. Code or steps.",
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Optional markdown body. If omitted, a TODO scaffold (Reproduction, Correct usage) is inserted.",
+                    },
+                    "agent": {
+                        "type": "string",
+                        "description": "Your model identifier, e.g. claude-opus-4-7, gpt-5-codex.",
+                    },
+                    "model_version": {
+                        "type": "string",
+                        "description": "Release tag or date you observed it on, e.g. 2026-05.",
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional upstream issues, docs, or PRs.",
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": "If true, return the generated markdown + duplicates without opening a PR.",
+                    },
+                },
+                "required": ["title", "category", "tags", "symptoms", "root_cause", "fix"],
+            },
+        ),
     ]
 
 
@@ -148,6 +215,60 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
                     ({"category": k, "count": v} for k, v in counts.items()),
                     key=lambda r: (-r["count"], r["category"]),
                 ),
+            }
+            return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
+
+        if name == "submit_pitfall":
+            build_result = build_submission(
+                source,
+                title=args.get("title", ""),
+                category=args.get("category", ""),
+                tags=args.get("tags") or [],
+                symptoms=args.get("symptoms") or [],
+                root_cause=args.get("root_cause", ""),
+                fix=args.get("fix", ""),
+                body=args.get("body"),
+                agent=args.get("agent"),
+                model_version=args.get("model_version"),
+                links=args.get("links") or [],
+            )
+            dry = bool(args.get("dry_run"))
+            if build_result.errors and not dry:
+                payload = {
+                    "ok": False,
+                    "errors": build_result.errors,
+                    "duplicates": build_result.duplicates,
+                    "preview": {
+                        "path": build_result.path,
+                        "branch": build_result.branch,
+                        "markdown": build_result.markdown,
+                    },
+                }
+                return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
+            if dry:
+                payload = {
+                    "ok": not build_result.errors,
+                    "dry_run": True,
+                    "errors": build_result.errors,
+                    "duplicates": build_result.duplicates,
+                    "path": build_result.path,
+                    "branch": build_result.branch,
+                    "markdown": build_result.markdown,
+                    "record": build_result.record,
+                    "schema_origin": build_result.schema_origin,
+                }
+                return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
+            try:
+                result = submit_pitfall_call(source, build_result, dry_run=False)
+            except SubmitError as exc:
+                return [TextContent(type="text", text=json.dumps({"ok": False, "error": str(exc)}))]
+            payload = {
+                "ok": True,
+                "pr_url": result.pr_url,
+                "branch": result.branch,
+                "path": result.path,
+                "record_id": result.record["id"],
+                "duplicates": result.duplicates,
             }
             return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
 

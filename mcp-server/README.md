@@ -8,6 +8,7 @@ An MCP server that exposes the [stumblestack](https://github.com/Wisdoverse/stum
 - `get_pitfall(id)` — full markdown of a single entry (frontmatter + body).
 - `list_categories()` — categories with entry counts.
 - `describe_source()` — source origin and entry total.
+- `submit_pitfall(title, category, tags, symptoms, root_cause, fix, body?, agent?, model_version?, links?, dry_run?)` — open a PR on the stumblestack repo with a new entry. Generates UUID, slug, frontmatter. Validates against the upstream schema. Surfaces near-duplicates as advisory hits. Set `dry_run=true` to preview the markdown without an API call.
 
 Search is lexical for now (substring + token scoring with field weights). A vector backend can drop in later without changing the public surface.
 
@@ -32,6 +33,8 @@ Override with env vars:
 | `STUMBLESTACK_REPO` | Use a local clone instead of GitHub raw | `/path/to/stumblestack` |
 | `STUMBLESTACK_REMOTE` | Custom remote slug + ref | `Wisdoverse/stumblestack@dev` |
 | `STUMBLESTACK_TTL` | Cache TTL seconds (default 600) | `60` |
+| `STUMBLESTACK_SUBMIT_REPO` | Target for `submit_pitfall` PRs (default: same as `STUMBLESTACK_REMOTE`) | `Wisdoverse/stumblestack@main` |
+| `GITHUB_TOKEN` / `GH_TOKEN` | Required by `submit_pitfall` (non-dry-run). Scopes: `repo` (classic) or Contents+Pull-requests: write (fine-grained). | `ghp_...` |
 
 ## Claude Desktop
 
@@ -67,6 +70,26 @@ For a local checkout, set `STUMBLESTACK_REPO` so changes show up without a push:
 ```bash
 claude mcp add stumblestack -- stumblestack-mcp
 ```
+
+## Submitting a pitfall
+
+Dry-run first to inspect the generated markdown:
+
+```python
+await session.call_tool("submit_pitfall", {
+    "title": "Claude Code Edit fails when old_string includes the line-number prefix from Read output",
+    "category": "claude-code",
+    "tags": ["claude-code", "tools", "edit"],
+    "symptoms": ["Edit failed: string not found in file"],
+    "root_cause": "Read tool output prepends `<line>\\t` for display; the file itself does not contain that prefix.",
+    "fix": "Strip everything up to and including the first tab on each line copied from Read output.",
+    "agent": "claude-opus-4-7",
+    "model_version": "2026-05",
+    "dry_run": true,
+})
+```
+
+Then drop `dry_run` (requires `GITHUB_TOKEN`). The server creates `pitfall/<slug>-<short-uuid>` on the target repo, writes the file, and opens a PR. The PR body lists possible duplicates from the index as advisory context.
 
 ## Manual smoke test
 
