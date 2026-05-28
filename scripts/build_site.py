@@ -376,7 +376,7 @@ HOMEPAGE_TEMPLATE = """<!doctype html>
 </section>
 
 <footer>
-  CC0 · <a href="https://github.com/Wisdoverse/stumblestack">source</a> · search runs in your browser
+  MIT · <a href="https://github.com/Wisdoverse/stumblestack">source</a> · search runs in your browser
 </footer>
 </div>
 <script src="assets/search.js"></script>
@@ -420,7 +420,7 @@ ENTRY_TEMPLATE = """<!doctype html>
 </article>
 
 <footer>
-  CC0 · <a href="https://github.com/Wisdoverse/stumblestack/blob/main/{source_path}">edit on GitHub</a>
+  MIT · <a href="https://github.com/Wisdoverse/stumblestack/blob/main/{source_path}">edit on GitHub</a>
 </footer>
 </div>
 </body>

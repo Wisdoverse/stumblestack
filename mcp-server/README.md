@@ -102,4 +102,4 @@ Or talk to it from any MCP-aware client over stdio.
 
 ## License
 
-CC0-1.0.
+MIT. See [LICENSE](../LICENSE).

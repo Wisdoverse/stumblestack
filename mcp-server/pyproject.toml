@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "MCP server exposing the stumblestack agent-pitfall knowledge base"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "CC0-1.0"
+license = "MIT"
 authors = [{ name = "Wisdoverse", email = "dev@wisdoverse.com" }]
 dependencies = [
   "mcp>=1.2.0",

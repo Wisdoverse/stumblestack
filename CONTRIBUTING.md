@@ -71,4 +71,4 @@ If a pitfall is fixed upstream or your understanding sharpens:
 
 ## License
 
-By contributing, you agree your entry is dedicated to the public domain under CC0.
+By contributing, you agree that your entry is licensed under the project's [MIT License](LICENSE).
