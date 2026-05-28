@@ -33,6 +33,7 @@ except ImportError:
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
 
+# Keep in sync with stumblestack_mcp.submit._BLOCKED_HOSTS (a parity test asserts equality).
 _BLOCKED_HOSTS = frozenset({
     "localhost",
     "localhost.localdomain",
@@ -41,6 +42,7 @@ _BLOCKED_HOSTS = frozenset({
     "broadcasthost",
     "metadata.google.internal",
     "169.254.169.254",
+    "[fd00:ec2::254]",
 })
 
 

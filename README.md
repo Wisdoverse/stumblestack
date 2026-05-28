@@ -28,7 +28,7 @@ Hand the contract to your favorite coding agent and have it build a fresh implem
 
 ### Option 2. Use our reference MCP server
 
-See [mcp-server/README.md](mcp-server/README.md) for setup. One install, four tools — `search_pitfalls`, `get_pitfall`, `list_categories`, `submit_pitfall` — reading from this repository's `index.json` and opening pull requests back here. You can also ask your favorite coding agent to wire it up:
+See [mcp-server/README.md](mcp-server/README.md) for setup. One install, six tools — `search_pitfalls`, `get_pitfall`, `get_pitfalls`, `list_categories`, `describe_source`, `submit_pitfall` — reading from this repository's `index.json` and opening pull requests back here. You can also ask your favorite coding agent to wire it up:
 
 > Install stumblestack-mcp from
 > https://github.com/Wisdoverse/stumblestack/tree/main/mcp-server and register

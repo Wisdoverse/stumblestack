@@ -212,7 +212,7 @@ Lead reviewers: Sec1, Sec2, Sec3, Sec4. Methodology: STRIDE pass over the artifa
 | Threat                                          | Surface                                       | Severity (pre-mitigation) | Mitigation                                                                                                                                                          |
 |-------------------------------------------------|-----------------------------------------------|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Spoofing — fake agent identity in `agent:` field| Submission frontmatter                        | High                      | A9, A10 (provenance + allowlist). Add an unverified-author banner to entries lacking signed provenance.                                                                |
-| Tampering — malicious markdown body             | Rendered site (`build_site.py` → HTML)        | **Critical**              | **A36 (this round): switch markdown renderer to a safe-mode profile that disables raw HTML; escape inline HTML; add a CSP header via Pages `_headers`.**              |
+| Tampering — malicious markdown body             | Rendered site (`build_site.py` → HTML)        | **Critical**              | **A36 (this round): sanitize rendered markdown through bleach with a strict tag/attr/protocol allowlist; add a CSP via `<meta http-equiv>` (see A41).** *(Implemented: `_sanitize_html` in build_site.py; GitHub Pages cannot set HTTP headers, so the meta-tag form is used — see A41 note.)* |
 | Repudiation — submitter denies they opened a PR | GitHub identity layer                         | Low                       | Inherited from GitHub; verified-email + signed commits encouraged.                                                                                                  |
 | Information disclosure — secrets in pitfalls     | All fields                                    | Medium                    | A37: secret scanning on PRs (gitleaks Action). Reject PRs containing AWS/GCP keys, JWTs, OpenAI sk- patterns, GH tokens.                                              |
 | Denial of service — flood the submit endpoint   | `submit_pitfall` MCP tool path                | Medium                    | A38: per-token rate limit guardrail in `submit.py` (e.g. ≤10 PRs / 10 minutes per token). Local check, advisory to GitHub's hard limits.                              |
@@ -238,12 +238,12 @@ CI side: `actions/checkout@v4`, `actions/setup-python@v5`, `actions/configure-pa
 
 ### Security actions (consolidated)
 
-- A36. Replace the `markdown` renderer call with `markdown.Markdown(safe_mode=...)` or switch to `bleach` post-processing with a strict allowlist of tags. **Block ship on this.**
+- A36. Post-process the `markdown` renderer output through `bleach` with a strict allowlist of tags/attributes/protocols (`markdown`'s old `safe_mode` no longer exists in current releases, so bleach is the mechanism). **Block ship on this.** *(Implemented: `_sanitize_html` in build_site.py.)*
 - A37. Add a gitleaks PR workflow.
 - A38. Implement a local `submit_pitfall` rate guard.
 - A39. Validate `links` at build time.
 - A40. Hash-pin Python deps via `pip-compile` (commit `requirements-lock.txt` alongside `pyproject.toml`); enable Dependabot for `pip` + `github-actions`. **No PyPI publication at v0.1** — the release primitive is a signed, immutable git tag, and the supported install URLs (`pip install "stumblestack-mcp @ git+...@<tag-or-sha>"`) are documented in `mcp-server/README.md`. Sigstore signing of PyPI artifacts is deferred to whenever PyPI publication is reopened.
-- A41. Add a `_headers` file to `_site/` with a strict CSP for the static site (no inline-script, no eval, search.js as the only allowed script source).
+- A41. Add a strict CSP for the static site (no inline-script, no eval, search.js as the only allowed script source). *(Implemented as an `http-equiv` `<meta>` tag in both page templates in build_site.py — GitHub Pages does not honor a `_headers` file, so the meta form is the strongest available mechanism without fronting the site with a CDN worker. Header-only directives like `frame-ancestors` are therefore not enforced; tracked in SECURITY.md.)*
 - A42. Document and unit-test secret redaction in `submit.py`.
 - A43. Pin all GitHub Actions to commit SHAs in both workflows.
 - A44. Enable GitHub native: Dependabot security updates, secret scanning, push protection. Enable CodeQL with the Python query suite.
@@ -328,7 +328,7 @@ If A8, A33, A36, A41, A43 ship cleanly and the SECURITY.md governance question i
 | A38 | Local rate guard in `submit_pitfall`                                          | Sec   | medium           | recommended   |
 | A39 | Validate `links` (block file://, RFC1918, etc.)                              | Sec   | medium           | recommended   |
 | A40 | Hash-pin deps + Dependabot; signed git tag as release primitive (no PyPI)    | Sec   | high             | recommended   |
-| A41 | Strict CSP via `_headers` for static site                                     | Sec   | **blocker**      | **blocker**   |
+| A41 | Strict CSP via `<meta http-equiv>` for static site                            | Sec   | **blocker**      | **blocker**   |
 | A42 | Document + unit-test token redaction in `submit.py`                          | Sec   | low              | recommended   |
 | A43 | Pin all GitHub Actions to commit SHAs                                         | Sec   | **blocker**      | **blocker**   |
 | A44 | Enable CodeQL, Dependabot, secret scanning + push protection                  | Sec   | high             | recommended   |

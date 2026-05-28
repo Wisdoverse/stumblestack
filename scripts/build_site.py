@@ -3,13 +3,20 @@
 
 Renders to <root>/_site:
   - index.html — homepage with client-side search over index.json
-  - p/<id>.html — per-entry page (frontmatter table + rendered body)
+  - p/<id>.html — per-entry page (frontmatter table + sanitized rendered body)
   - index.json — copy of the API surface
   - schemas/pitfall.schema.json — copy for direct linking
+  - pitfalls/<cat>/<slug>.md — raw markdown mirror at the repo-relative path (A18)
+  - api/v1/index.json, api/v1/pitfall.schema.json, api/v1/p/<id>.json — versioned API (A30)
   - assets/style.css — minimal monospace stylesheet
   - assets/search.js — client-side lexical search mirroring the MCP server's logic
 
-No Jekyll. No external runtime deps beyond markdown + pyyaml (already in scripts/).
+The build is deterministic: output depends only on the corpus, never on the wall
+clock (the homepage "updated" date is the latest entry date; override with
+STUMBLESTACK_BUILD_DATE). Markdown bodies are sanitized through bleach (A36) and
+every page carries a strict CSP meta tag (A41).
+
+No Jekyll. Runtime deps: markdown, pyyaml, bleach (see requirements.txt).
 
 Usage: python scripts/build_site.py [--root REPO_ROOT] [--out _site]
 """
@@ -19,6 +26,7 @@ import argparse
 import datetime as _dt
 import html
 import json
+import os
 import re
 import shutil
 import sys
@@ -312,7 +320,10 @@ footer a { color: var(--muted); }
 .category-grid .count { color: var(--muted); margin-left: 0.4rem; font-size: 0.8rem; }
 """
 
-SEARCH_JS = r"""// Mirrors stumblestack_mcp/search.py field weights.
+SEARCH_JS = r"""// Mirrors stumblestack_mcp/search.py exactly (see docs/DESIGN.md section 9c).
+// The verified_count bonus is added ONLY when the lexical base score is > 0,
+// and the sort tiebreak is ascending id — both must match search.py or the
+// site ranks entries differently from the MCP server.
 const WEIGHTS = { title: 3.0, symptoms: 4.0, tags: 2.0, root_cause: 1.5, category: 1.0 };
 const TOKEN_RE = /[a-z0-9]+/g;
 function tokenize(s) { return s.toLowerCase().match(TOKEN_RE) || []; }
@@ -337,6 +348,8 @@ function score(entry, terms, rawQuery) {
     }
     if (rawQuery && lower.includes(rawQuery)) s += w * 2.0;
   }
+  // No lexical match => excluded, regardless of verified_count (mirrors search.py).
+  if (s <= 0) return { score: 0, matched: [] };
   s += Math.min(entry.verified_count || 0, 10) * 0.1;
   return { score: s, matched: Array.from(matched) };
 }
@@ -376,7 +389,7 @@ function escapeHtml(s) {
       const raw = q.toLowerCase();
       const scored = entries.map(e => ({ entry: e, ...score(e, terms, raw) }))
         .filter(s => s.score > 0)
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => b.score - a.score || String(a.entry.id).localeCompare(String(b.entry.id)))
         .slice(0, 25)
         .map(s => s.entry);
       render(scored);
@@ -521,6 +534,17 @@ def _render_frontmatter(record: dict) -> str:
     return "\n    ".join(rows)
 
 
+def _corpus_date(entries: list[dict]) -> str:
+    """Most recent entry date in the corpus (updated, else created). Deterministic:
+    depends only on the data, never on the wall clock. Empty corpus -> empty string."""
+    dates = [
+        str(e.get("updated") or e.get("created") or "")
+        for e in entries
+        if (e.get("updated") or e.get("created"))
+    ]
+    return max(dates) if dates else ""
+
+
 def build(root: Path, out: Path) -> int:
     index_path = root / "index.json"
     if not index_path.exists():
@@ -560,23 +584,31 @@ def build(root: Path, out: Path) -> int:
         for c, n in category_items
     ) or '<li class="empty">none yet</li>'
 
-    updated_today = _dt.date.today().isoformat()
+    # Deterministic "updated" date: the most recent entry date, NOT the wall
+    # clock — so a rebuild with no content change is byte-identical (the build
+    # must not depend on when it runs). Override with STUMBLESTACK_BUILD_DATE
+    # (ISO date) for reproducible release builds.
+    updated = os.environ.get("STUMBLESTACK_BUILD_DATE") or _corpus_date(entries)
     homepage = HOMEPAGE_TEMPLATE.format(
         count=len(entries),
-        updated=_esc(updated_today),
+        updated=_esc(updated),
         category_list=cat_html,
     )
     (out / "index.html").write_text(homepage, encoding="utf-8")
 
     # per-entry pages
     converter = md.Markdown(extensions=["fenced_code", "tables", "toc"])
+    rendered_count = 0
+    skipped: list[str] = []
     for record in entries:
         pid = record.get("id")
         source_rel = record.get("path")
         if not pid or not source_rel:
+            skipped.append(f"{pid or '<no-id>'}: missing id or path")
             continue
         src = root / source_rel
         if not src.exists():
+            skipped.append(f"{pid}: source file not found at {source_rel}")
             continue
         frontmatter, body = parse_entry(src)
         raw_html = converter.reset().convert(body) if body else "<p><em>No body content.</em></p>"
@@ -610,8 +642,21 @@ def build(root: Path, out: Path) -> int:
             json.dumps(api_payload, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
+        rendered_count += 1
 
-    print(f"wrote {out} ({len(entries)} entries, {len(category_items)} categories)")
+    if skipped:
+        # A regression that orphans an entry's path must not pass as success.
+        sys.stderr.write(
+            f"build_site: {len(skipped)} of {len(entries)} entries could not be rendered:\n"
+        )
+        for line in skipped:
+            sys.stderr.write(f"  - {line}\n")
+        sys.stderr.write(
+            "Run scripts/validate.py and rebuild index.json — index/disk drift detected.\n"
+        )
+        return 1
+
+    print(f"wrote {out} ({rendered_count}/{len(entries)} entries, {len(category_items)} categories)")
     return 0
 
 

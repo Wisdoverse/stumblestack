@@ -58,9 +58,11 @@ def rank(entries, query, top_k):
                     score += w * c
             if raw and raw in ft.lower():
                 score += w * 2.0
+        # No lexical match => excluded before the verified bonus (mirrors search.py).
+        if score <= 0:
+            continue
         score += min(e.get("verified_count") or 0, 10) * 0.1
-        if score > 0:
-            scored.append((score, e.get("id"), e))
+        scored.append((score, e.get("id"), e))
     scored.sort(key=lambda r: (-r[0], r[1] or ""))
     return [e_id for _, e_id, _ in scored[:top_k]]
 

@@ -17,6 +17,7 @@ import base64
 import hashlib
 import ipaddress
 import json
+import logging
 import os
 import re
 import secrets
@@ -33,6 +34,8 @@ import yaml
 
 from .search import search
 from .source import StumblestackSource
+
+log = logging.getLogger("stumblestack_mcp.submit")
 
 GITHUB_API = "https://api.github.com"
 
@@ -139,8 +142,13 @@ def _enforce_rate_limit(token: str) -> None:
     fresh.append(now)
     try:
         path.write_text(json.dumps(fresh), encoding="utf-8")
-    except OSError:
-        pass
+    except OSError as exc:
+        # If the cache is unwritable the client-side throttle silently stops
+        # counting — make that degradation observable rather than invisible.
+        log.warning(
+            "rate-limit cache unwritable at %s: %s; client-side throttle is not persisting",
+            path, exc,
+        )
 
 
 def _slugify(title: str, max_len: int = 60) -> str:
@@ -253,8 +261,10 @@ class BuildResult:
     path: str
     branch: str
     duplicates: list[dict]
-    errors: list[str]
+    errors: list[dict]  # structured {field, message, suggestion?} (A21)
     schema_origin: str | None
+    schema_validated: bool = True  # False if the schema could not be fetched (A4-followup)
+    duplicates_checked: bool = True  # False if the duplicate search failed
 
 
 @dataclass
@@ -306,11 +316,18 @@ def build(
     branch = f"pitfall/{slug}-{short}"
 
     schema = _fetch_schema(source, schema_url)
+    schema_validated = schema is not None
+    if not schema_validated:
+        log.warning(
+            "pitfall schema could not be fetched; validating with local field checks only "
+            "(JSON-Schema constraints like minLength/pattern are NOT enforced this run)"
+        )
     errors = _validate_record(record, schema)
 
     dup_query_parts = [record["title"], *record["symptoms"], record["root_cause"]]
     dup_query = " ".join(p for p in dup_query_parts if p)
     duplicates: list[dict] = []
+    duplicates_checked = True
     try:
         hits = search(source.entries(), dup_query, top_k=3)
         duplicates = [
@@ -322,8 +339,12 @@ def build(
             }
             for h in hits
         ]
-    except Exception:
-        duplicates = []
+    except (RuntimeError, httpx.HTTPError, OSError) as exc:
+        # The data source could not be loaded. Dedup is advisory and must never
+        # block a submission — but record that it did not run so an empty
+        # `duplicates` is not mistaken for "checked, found none".
+        log.warning("duplicate search skipped: %s", exc)
+        duplicates_checked = False
 
     markdown = build_markdown(record, body)
 
@@ -335,6 +356,8 @@ def build(
         duplicates=duplicates,
         errors=errors,
         schema_origin=schema_url or (f"{source.origin()}/schemas/pitfall.schema.json"),
+        schema_validated=schema_validated,
+        duplicates_checked=duplicates_checked,
     )
 
 
@@ -352,7 +375,9 @@ def _fetch_schema(source: StumblestackSource, override_url: str | None) -> dict 
             r = client.get(url)
             if r.status_code == 200:
                 return r.json()
-    except Exception:
+            log.warning("schema fetch returned HTTP %s from %s", r.status_code, url)
+    except (httpx.HTTPError, OSError, json.JSONDecodeError) as exc:
+        log.warning("schema fetch failed: %s", exc)
         return None
     return None
 
@@ -397,7 +422,10 @@ def _gh_headers(token: str) -> dict[str, str]:
 
 def submit(source: StumblestackSource, build_result: BuildResult, *, dry_run: bool = False) -> SubmitResult:
     if build_result.errors:
-        raise SubmitError("invalid pitfall: " + "; ".join(build_result.errors))
+        rendered = "; ".join(
+            f"{e.get('field', '?')}: {e.get('message', '')}" for e in build_result.errors
+        )
+        raise SubmitError("invalid pitfall: " + rendered)
 
     if dry_run:
         return SubmitResult(
