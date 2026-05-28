@@ -36,6 +36,56 @@ except ImportError:
     sys.stderr.write("Missing dependency: markdown. Install: pip install markdown\n")
     sys.exit(2)
 
+try:
+    import bleach
+except ImportError:
+    sys.stderr.write(
+        "Missing dependency: bleach. Install: pip install 'bleach[css]'\n"
+        "Required for A36 (markdown XSS hardening — DESIGN_REVIEW.md).\n"
+    )
+    sys.exit(2)
+
+
+# A36: strict tag / attribute / protocol allowlist for sanitizing rendered markdown.
+# Any HTML smuggled through a pitfall body must round-trip through this filter
+# before reaching stumblestack.dev. Do not loosen without updating the threat
+# model in docs/DESIGN_REVIEW.md.
+ALLOWED_TAGS = frozenset({
+    "a", "abbr", "b", "blockquote", "br", "code", "del", "em", "hr",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "i", "img", "kbd", "li", "ol", "p", "pre", "s", "strong", "sub", "sup",
+    "table", "tbody", "td", "th", "thead", "tr", "ul",
+    "div", "span",
+})
+ALLOWED_ATTRS = {
+    "a": ["href", "title", "rel"],
+    "abbr": ["title"],
+    "code": ["class"],
+    "div": ["class"],
+    "img": ["src", "alt", "title"],
+    "pre": ["class"],
+    "span": ["class"],
+    "th": ["align"],
+    "td": ["align"],
+}
+ALLOWED_PROTOCOLS = ["http", "https", "mailto"]
+
+
+def _sanitize_html(rendered: str) -> str:
+    cleaned = bleach.clean(
+        rendered,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRS,
+        protocols=ALLOWED_PROTOCOLS,
+        strip=True,
+        strip_comments=True,
+    )
+    return bleach.linkify(
+        cleaned,
+        callbacks=[bleach.callbacks.nofollow, bleach.callbacks.target_blank],
+        skip_tags=["pre", "code"],
+    )
+
 
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
@@ -343,6 +393,8 @@ HOMEPAGE_TEMPLATE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'self'; form-action 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>stumblestack — agent pitfalls</title>
 <meta name="description" content="Shared knowledge base of agent pitfalls — gotchas, footguns, and recurring errors that LLM agents stumble into.">
 <link rel="stylesheet" href="assets/style.css">
@@ -390,6 +442,8 @@ ENTRY_TEMPLATE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'self'; form-action 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>{title} — stumblestack</title>
 <meta name="description" content="{description}">
 <link rel="stylesheet" href="../assets/style.css">
@@ -520,7 +574,8 @@ def build(root: Path, out: Path) -> int:
         if not src.exists():
             continue
         frontmatter, body = parse_entry(src)
-        body_html = converter.reset().convert(body) if body else "<p><em>No body content.</em></p>"
+        raw_html = converter.reset().convert(body) if body else "<p><em>No body content.</em></p>"
+        body_html = _sanitize_html(raw_html)
         description = (frontmatter.get("root_cause") or frontmatter.get("title") or "")[:160]
         rendered = ENTRY_TEMPLATE.format(
             title=_esc(frontmatter.get("title", "")),
