@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import ipaddress
 import json
 import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from urllib.parse import urlparse
 
 try:
     import yaml
@@ -31,6 +33,65 @@ except ImportError:
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
 
+_BLOCKED_HOSTS = frozenset({
+    "localhost",
+    "localhost.localdomain",
+    "ip6-localhost",
+    "ip6-loopback",
+    "broadcasthost",
+    "metadata.google.internal",
+    "169.254.169.254",
+})
+
+
+def link_problem(url: str) -> str | None:
+    """A39 — reject SSRF-prone or local URLs at CI time. Mirrors submit.py."""
+    if not isinstance(url, str) or not url.strip():
+        return "empty url"
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in {"http", "https"}:
+        return f"unsupported scheme `{parsed.scheme or '<none>'}`"
+    if not parsed.hostname:
+        return "missing hostname"
+    host = parsed.hostname.strip().lower().rstrip(".")
+    if host in _BLOCKED_HOSTS:
+        return f"host `{host}` is blocked"
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    if ip is not None:
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return f"host `{host}` is non-routable / private"
+    elif "." not in host:
+        return f"host `{host}` is not a public FQDN"
+    return None
+
+
+_UNSAFE_SHELL_RE = re.compile(
+    r"(curl\s+[^|]*\|\s*(sh|bash|zsh|fish))"
+    r"|(wget\s+[^|]*\|\s*(sh|bash|zsh|fish))"
+    r"|(\brm\s+-rf?\s+/(?:\s|$))"
+    r"|(\bsudo\s+rm\s+-rf?\s+/)"
+    r"|(:\(\)\s*\{\s*:\|:&\s*\};\s*:)"  # fork bomb
+    r"|(\bmkfs\.(?:ext[234]|xfs|btrfs)\b\s+/dev/)"
+    r"|(\bdd\s+if=\S+\s+of=/dev/sd[a-z])",
+    re.IGNORECASE,
+)
+
+
+def unsafe_shell_hits(text: str) -> list[str]:
+    """A12 — flag dangerous shell patterns in `fix` or body code blocks."""
+    return [m.group(0) for m in _UNSAFE_SHELL_RE.finditer(text or "")]
+
+
 def _stringify_dates(value):
     if isinstance(value, _dt.datetime):
         return value.date().isoformat()
@@ -43,7 +104,7 @@ def _stringify_dates(value):
     return value
 
 
-def parse_entry(path: Path) -> dict:
+def parse_entry(path: Path) -> tuple[dict, str]:
     text = path.read_text(encoding="utf-8")
     m = FRONTMATTER_RE.match(text)
     if not m:
@@ -51,7 +112,7 @@ def parse_entry(path: Path) -> dict:
     data = yaml.safe_load(m.group(1)) or {}
     if not isinstance(data, dict):
         raise ValueError("frontmatter must be a YAML mapping")
-    return _stringify_dates(data)
+    return _stringify_dates(data), text[m.end():]
 
 
 def main() -> int:
@@ -77,7 +138,7 @@ def main() -> int:
     for path in paths:
         rel = path.relative_to(root)
         try:
-            data = parse_entry(path)
+            data, body = parse_entry(path)
         except Exception as exc:
             errors.append(f"{rel}: {exc}")
             continue
@@ -85,6 +146,29 @@ def main() -> int:
         for err in validator.iter_errors(data):
             loc = ".".join(str(p) for p in err.absolute_path) or "<root>"
             errors.append(f"{rel}: schema: {loc}: {err.message}")
+
+        # A39 — link safety
+        for url in data.get("links", []) or []:
+            problem = link_problem(str(url))
+            if problem:
+                errors.append(f"{rel}: unsafe link `{url}`: {problem}")
+
+        # A12 — unsafe shell pattern lint. Allow opt-out via `fix_unsafe: true`,
+        # which itself is a flag the renderer surfaces to readers.
+        if not data.get("fix_unsafe"):
+            for source_field in ("fix", ):
+                hits = unsafe_shell_hits(str(data.get(source_field) or ""))
+                for hit in hits:
+                    errors.append(
+                        f"{rel}: unsafe shell pattern in `{source_field}`: `{hit.strip()}` — "
+                        "set `fix_unsafe: true` in frontmatter to acknowledge"
+                    )
+            body_hits = unsafe_shell_hits(body)
+            for hit in body_hits:
+                errors.append(
+                    f"{rel}: unsafe shell pattern in body: `{hit.strip()}` — "
+                    "set `fix_unsafe: true` in frontmatter to acknowledge"
+                )
 
         # filesystem consistency
         parts = path.relative_to(pitfalls_dir).parts

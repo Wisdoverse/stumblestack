@@ -75,6 +75,11 @@
       "type": "array",
       "items": {"type": "string", "format": "uri"},
       "description": "Upstream issues, docs, PRs that corroborate."
+    },
+    "fix_unsafe": {
+      "type": "boolean",
+      "default": false,
+      "description": "Acknowledge that the `fix` or body contains shell patterns flagged as dangerous by CI (curl|sh, rm -rf /, etc.). Setting this to true does not make the pattern safe; it surfaces a warning to readers and unblocks merge."
     }
   }
 }

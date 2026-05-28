@@ -21,13 +21,16 @@ jobs:
           python-version: "3.12"
 
       - name: Install deps
-        run: pip install pyyaml jsonschema
+        run: pip install -r requirements.txt
 
       - name: Validate pitfall entries
         run: python scripts/validate.py
 
       - name: Build index
         run: python scripts/build_index.py
+
+      - name: Guard against accidental index shrinkage
+        run: python scripts/index_check.py --new index.json
 
       - name: Check index is up to date
         if: github.event_name == 'pull_request'

@@ -14,14 +14,19 @@ Repo: `STUMBLESTACK_SUBMIT_REPO` (default: same as STUMBLESTACK_REMOTE / Wisdove
 from __future__ import annotations
 
 import base64
+import hashlib
+import ipaddress
 import json
 import os
 import re
 import secrets
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import date
+from pathlib import Path as _Path
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 import yaml
@@ -37,8 +42,105 @@ _SLUG_INVALID = re.compile(r"[^a-z0-9]+")
 _KEBAB = re.compile(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
 
 
+_BLOCKED_HOSTS = frozenset({
+    "localhost",
+    "localhost.localdomain",
+    "ip6-localhost",
+    "ip6-loopback",
+    "broadcasthost",
+    "metadata.google.internal",
+    "169.254.169.254",
+    "[fd00:ec2::254]",
+})
+
+
+def validate_link(url: str) -> str | None:
+    """Return None if `url` is safe to link from a pitfall, else a reason string.
+
+    A39 from docs/DESIGN_REVIEW.md: links are submitter-controlled and end up rendered
+    on stumblestack.dev plus the PR description. Reject SSRF-prone or local-only URLs.
+    """
+    if not isinstance(url, str) or not url.strip():
+        return "empty url"
+    raw = url.strip()
+    try:
+        parsed = urlparse(raw)
+    except ValueError as exc:
+        return f"unparseable url: {exc}"
+
+    if parsed.scheme not in {"http", "https"}:
+        return f"unsupported scheme `{parsed.scheme or '<none>'}`; only http and https are allowed"
+    if not parsed.hostname:
+        return "url is missing a hostname"
+
+    host = parsed.hostname.strip().lower().rstrip(".")
+    if host in _BLOCKED_HOSTS:
+        return f"host `{host}` is blocked (local or cloud-metadata)"
+
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    if ip is not None:
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return f"host `{host}` resolves to a non-routable / private address"
+    elif "." not in host:
+        return f"host `{host}` is not a public FQDN"
+
+    return None
+
+
 class SubmitError(Exception):
     """Raised for any caller-correctable submit problem (bad input, dup-by-id, auth)."""
+
+
+# A38 — advisory client-side rate guard. We cannot trust callers to behave, but we can
+# refuse to participate when a single token would burst above the documented contract.
+# This is *in addition to* GitHub's hard server-side limits, not a replacement for them.
+RATE_WINDOW_SECONDS = int(os.environ.get("STUMBLESTACK_RATE_WINDOW", 600))
+RATE_MAX_SUBMITS = int(os.environ.get("STUMBLESTACK_RATE_MAX", 10))
+
+
+def _rate_cache_dir() -> _Path:
+    base = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
+    path = _Path(base) / "stumblestack"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _rate_cache_path(token: str) -> _Path:
+    digest = hashlib.sha256(token.encode("utf-8")).hexdigest()[:32]
+    return _rate_cache_dir() / f"submits-{digest}.json"
+
+
+def _enforce_rate_limit(token: str) -> None:
+    path = _rate_cache_path(token)
+    now = time.time()
+    try:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        existing = []
+    fresh = [t for t in existing if isinstance(t, (int, float)) and now - t < RATE_WINDOW_SECONDS]
+    if len(fresh) >= RATE_MAX_SUBMITS:
+        oldest = min(fresh)
+        retry_in = int(RATE_WINDOW_SECONDS - (now - oldest))
+        raise SubmitError(
+            f"local rate limit reached: {len(fresh)} submissions in the last "
+            f"{RATE_WINDOW_SECONDS}s (cap {RATE_MAX_SUBMITS}). Try again in ~{retry_in}s. "
+            "Override via STUMBLESTACK_RATE_MAX / STUMBLESTACK_RATE_WINDOW only for trusted bots."
+        )
+    fresh.append(now)
+    try:
+        path.write_text(json.dumps(fresh), encoding="utf-8")
+    except OSError:
+        pass
 
 
 def _slugify(title: str, max_len: int = 60) -> str:
@@ -94,6 +196,10 @@ def _validate_record(record: dict, schema: dict | None) -> list[str]:
     for tag in record.get("tags", []) or []:
         if not _KEBAB.match(str(tag)):
             errors.append(f"tag not kebab-case: {tag}")
+    for url in record.get("links", []) or []:
+        reason = validate_link(str(url))
+        if reason:
+            errors.append(f"unsafe link `{url}`: {reason}")
     if not schema:
         return errors
     try:
@@ -262,6 +368,8 @@ def submit(source: StumblestackSource, build_result: BuildResult, *, dry_run: bo
             "GITHUB_TOKEN (or GH_TOKEN) not set. Required scopes: repo (classic) or "
             "Contents+Pull requests: write (fine-grained)."
         )
+
+    _enforce_rate_limit(token)
 
     owner, repo, base = _submit_repo()
     headers = _gh_headers(token)

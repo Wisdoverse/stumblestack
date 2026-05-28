@@ -1,0 +1,7 @@
+# Repo-root scripts (validate.py, build_index.py, build_site.py).
+# Pinned exact versions; Dependabot opens PRs to bump them weekly.
+# Bleach is A36 (XSS hardening); see docs/DESIGN_REVIEW.md.
+PyYAML==6.0.3
+jsonschema==4.26.0
+Markdown==3.10.2
+bleach==6.3.0

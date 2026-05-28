@@ -25,13 +25,16 @@ jobs:
           python-version: "3.12"
 
       - name: Install deps
-        run: pip install pyyaml jsonschema markdown bleach
+        run: pip install -r requirements.txt
 
       - name: Validate pitfall entries
         run: python scripts/validate.py
 
       - name: Rebuild index.json
         run: python scripts/build_index.py
+
+      - name: Guard against accidental index shrinkage
+        run: python scripts/index_check.py --new index.json
 
       - name: Build static site
         run: python scripts/build_site.py --out _site
