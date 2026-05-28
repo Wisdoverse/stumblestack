@@ -20,6 +20,7 @@ import random
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+
 import httpx
 
 DEFAULT_CANONICAL_BASE = "https://stumblestack.dev"
@@ -149,7 +150,7 @@ class StumblestackSource:
             self._mirrors = _build_mirror_chain(self.local_path)
 
     @classmethod
-    def from_env(cls) -> "StumblestackSource":
+    def from_env(cls) -> StumblestackSource:
         local = os.environ.get("STUMBLESTACK_REPO")
         local_path = Path(local).expanduser().resolve() if local else None
 
@@ -170,7 +171,7 @@ class StumblestackSource:
             except ValueError:
                 raise RuntimeError(
                     f"STUMBLESTACK_TTL must be an integer number of seconds, got {ttl_raw!r}"
-                )
+                ) from None
 
         return cls(
             local_path=local_path,

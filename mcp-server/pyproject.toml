@@ -17,8 +17,37 @@ dependencies = [
   "jsonschema>=4.21.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+  "mypy>=1.10",
+  "types-PyYAML",
+  "markdown>=3.6",
+  "bleach>=6.1",
+]
+
 [project.scripts]
 stumblestack-mcp = "stumblestack_mcp.server:main"
+stumblestack = "stumblestack_mcp.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/stumblestack_mcp"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # line length is enforced loosely; long URLs/strings are fine
+
+[tool.mypy]
+python_version = "3.10"
+# Scope mypy to the package src; scripts/ are intentionally untyped.
+# Path is repo-root-relative because CI and the Makefile invoke mypy from the
+# repo root with --config-file mcp-server/pyproject.toml.
+files = ["mcp-server/src/stumblestack_mcp"]
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = true

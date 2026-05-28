@@ -6,6 +6,7 @@ into an enforced invariant. The JS copy in build_site.py is checked structurally
 from __future__ import annotations
 
 import eval_search  # from scripts/ via conftest path
+
 from stumblestack_mcp.search import FIELD_WEIGHTS, search
 
 

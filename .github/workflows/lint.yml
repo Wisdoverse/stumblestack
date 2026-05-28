@@ -1,0 +1,32 @@
+name: lint
+
+on:
+  pull_request:
+    paths:
+      - "mcp-server/**"
+      - "scripts/**"
+      - ".github/workflows/lint.yml"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e mcp-server[dev] -r requirements.txt
+
+      - name: Ruff
+        run: ruff check mcp-server/src mcp-server/tests scripts
+
+      - name: Mypy (package src only)
+        run: mypy --config-file mcp-server/pyproject.toml

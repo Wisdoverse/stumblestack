@@ -44,19 +44,22 @@ def test_accepts_all_new_fields():
 
 
 def test_rejects_bad_severity():
-    r = _valid_base(); r["severity"] = "catastrophic"
+    r = _valid_base()
+    r["severity"] = "catastrophic"
     with pytest.raises(jsonschema.ValidationError):
         _check(r)
 
 
 def test_rejects_unknown_applies_to_key():
-    r = _valid_base(); r["applies_to"] = {"platform": "x"}
+    r = _valid_base()
+    r["applies_to"] = {"platform": "x"}
     with pytest.raises(jsonschema.ValidationError):
         _check(r)
 
 
 def test_fix_code_requires_code():
-    r = _valid_base(); r["fix_code"] = {"language": "bash"}
+    r = _valid_base()
+    r["fix_code"] = {"language": "bash"}
     with pytest.raises(jsonschema.ValidationError):
         _check(r)
 

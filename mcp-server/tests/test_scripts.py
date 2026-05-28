@@ -8,10 +8,10 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
-
 import build_site
+import pytest
 import validate
+
 from stumblestack_mcp import submit
 
 REPO = Path(__file__).resolve().parents[2]

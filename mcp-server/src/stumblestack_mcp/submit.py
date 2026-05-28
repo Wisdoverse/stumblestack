@@ -333,7 +333,7 @@ def build(
     if model_version:
         record["model_version"] = model_version.strip()
     if links:
-        record["links"] = [l for l in links if l]
+        record["links"] = [u for u in links if u]
 
     slug = _slugify(record["title"] or "pitfall")
     short = record["id"].split("-", 1)[0]

@@ -598,7 +598,7 @@ def _render_frontmatter(record: dict) -> str:
         )
     if record.get("links"):
         link_html = "<br>".join(
-            f'<a href="{_esc(l)}" rel="noopener">{_esc(l)}</a>' for l in record["links"]
+            f'<a href="{_esc(u)}" rel="noopener">{_esc(u)}</a>' for u in record["links"]
         )
         rows.append(f"<div><dt>links</dt><dd>{link_html}</dd></div>")
     return "\n    ".join(rows)

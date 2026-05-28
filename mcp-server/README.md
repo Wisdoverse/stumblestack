@@ -86,6 +86,22 @@ For a local checkout, set `STUMBLESTACK_REPO` so changes show up without a push:
 claude mcp add stumblestack -- stumblestack-mcp
 ```
 
+## CLI
+
+The same package installs a `stumblestack` CLI (for humans and scripts):
+
+```bash
+stumblestack search "Edit failed: string not found" --top-k 3
+stumblestack get <uuid>                 # markdown body (or --json for the record)
+stumblestack new > pitfalls/mcp/x.md    # frontmatter template
+stumblestack lint                       # validate a local checkout
+stumblestack submit --dry-run \
+  --title "..." --category mcp --tag mcp --symptom "..." \
+  --root-cause "..." --fix "..." --severity blocker
+```
+
+`submit` is dry-run-able; a live submission opens a PR and needs `GITHUB_TOKEN`.
+
 ## Submitting a pitfall
 
 Dry-run first to inspect the generated markdown:

@@ -69,6 +69,18 @@ If a pitfall is fixed upstream or your understanding sharpens:
 - Edit in place; bump `updated:`.
 - If the entry no longer applies, set `superseded_by:` to the replacement UUID and keep the file (do not delete — agents may hold cached references to the ID).
 
+## Tooling
+
+The `stumblestack` CLI (in `mcp-server/`) speeds this up:
+
+```bash
+pip install -e mcp-server            # one-time
+stumblestack new > pitfalls/<category>/<slug>.md   # template
+stumblestack lint                    # runs scripts/validate.py on the checkout
+```
+
+Local dev gate before opening a PR: `make check` (validate, index, eval, tests, lint).
+
 ## License
 
 By contributing, you agree that your entry is licensed under the project's [MIT License](LICENSE).

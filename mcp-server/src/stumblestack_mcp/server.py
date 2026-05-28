@@ -13,7 +13,9 @@ from mcp.types import TextContent, Tool
 
 from .search import search
 from .source import StumblestackSource
-from .submit import SubmitError, build as build_submission, redact, submit as submit_pitfall_call
+from .submit import SubmitError, redact
+from .submit import build as build_submission
+from .submit import submit as submit_pitfall_call
 
 log = logging.getLogger("stumblestack_mcp")
 
@@ -68,7 +70,7 @@ def _coerce_top_k(raw: Any) -> int:
     try:
         k = int(raw)
     except (TypeError, ValueError):
-        raise ValueError(f"top_k must be an integer, got {raw!r}")
+        raise ValueError(f"top_k must be an integer, got {raw!r}") from None
     return max(1, min(k, MAX_TOP_K))
 
 

@@ -1,0 +1,11 @@
+# Default owner for everything. Required reviewer on PRs.
+* @Wisdoverse
+
+# Security-sensitive surfaces get explicit ownership so changes are never
+# auto-merged without maintainer eyes.
+/schemas/                 @Wisdoverse
+/.github/                 @Wisdoverse
+/mcp-server/              @Wisdoverse
+/scripts/                 @Wisdoverse
+/SECURITY.md              @Wisdoverse
+/docs/STEWARDSHIP.md      @Wisdoverse

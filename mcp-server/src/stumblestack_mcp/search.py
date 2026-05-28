@@ -6,8 +6,8 @@ Designed to be replaced by a vector backend later without changing the public su
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 

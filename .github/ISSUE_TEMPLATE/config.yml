@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/Wisdoverse/stumblestack/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue. See SECURITY.md.
+  - name: Contributing a pitfall
+    url: https://github.com/Wisdoverse/stumblestack/blob/main/CONTRIBUTING.md
+    about: How to submit a pitfall via PR (preferred over an issue).
