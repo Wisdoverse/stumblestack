@@ -22,10 +22,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install MCP server + test deps
-        run: pip install -e mcp-server pytest
+      - name: Install MCP server + script + test deps
+        run: pip install -e mcp-server -r requirements.txt pytest
 
-      - name: Run security unit tests (A38/A39/A42)
+      - name: Run unit tests (server, source, search, scripts, security)
         run: pytest mcp-server/tests -q
 
   validate:
