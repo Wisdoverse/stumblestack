@@ -107,6 +107,27 @@ async def list_tools() -> list[Tool]:
             },
         ),
         Tool(
+            name="get_pitfalls",
+            description=(
+                "Fetch multiple pitfall entries by id in a single call. "
+                "Returns a list aligned with the input ids; unknown ids come back with an `error` field. "
+                "Prefer this over repeated get_pitfall calls when a search returned several relevant ids."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 1,
+                        "maxItems": 25,
+                        "description": "Pitfall UUIDs to fetch (max 25).",
+                    }
+                },
+                "required": ["ids"],
+            },
+        ),
+        Tool(
             name="list_categories",
             description=(
                 "List all categories present in the index, with entry counts. "
@@ -226,6 +247,24 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
                 "markdown": body,
                 "origin": source.origin(),
                 "cache_age_seconds": source.cache_age_seconds(),
+            }
+            return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
+
+        if name == "get_pitfalls":
+            ids = args.get("ids") or []
+            results = []
+            for pid in ids[:25]:
+                try:
+                    record, body = source.entry_body(pid)
+                    results.append({"id": pid, "record": record, "markdown": body})
+                except KeyError:
+                    results.append({"id": pid, "error": "not_found"})
+            payload = {
+                "advisory": ADVISORY_BANNER,
+                "origin": source.origin(),
+                "cache_age_seconds": source.cache_age_seconds(),
+                "count": len(results),
+                "results": results,
             }
             return [TextContent(type="text", text=json.dumps(payload, indent=2, ensure_ascii=False))]
 

@@ -1,7 +1,626 @@
 {
   "schema_version": 1,
-  "count": 1,
+  "count": 54,
   "entries": [
+    {
+      "id": "01293083-6896-4daf-b71e-2a8ceb1541c4",
+      "title": "git reset --hard discards uncommitted changes with no undo",
+      "category": "git",
+      "tags": [
+        "git",
+        "reset",
+        "data-loss"
+      ],
+      "symptoms": [
+        "uncommitted edits gone after a reset",
+        "working tree reverted unexpectedly"
+      ],
+      "root_cause": "`git reset --hard` overwrites the working tree and index to match the target commit, throwing away uncommitted changes. They are not in any commit, so reflog cannot recover them.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/git/git-reset-hard-discards-uncommitted-changes-with-no-undo.md"
+    },
+    {
+      "id": "0dcd35a6-14a9-4019-9e84-e966fc67e450",
+      "title": "Commits made on a detached HEAD are orphaned after checkout",
+      "category": "git",
+      "tags": [
+        "git",
+        "detached-head",
+        "data-loss"
+      ],
+      "symptoms": [
+        "my commits vanished after switching branches",
+        "You are in 'detached HEAD' state"
+      ],
+      "root_cause": "Committing while HEAD is detached (e.g. after `git checkout <sha>`) creates commits no branch points to. Switching away leaves them unreferenced and eventually garbage-collected.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/git/commits-made-on-a-detached-head-are-orphaned-after-checkout.md"
+    },
+    {
+      "id": "1b30d861-0777-4234-8689-8f07a158c8eb",
+      "title": "Anthropic prompt caching silently does nothing below the minimum cacheable length",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "prompt-caching",
+        "performance"
+      ],
+      "symptoms": [
+        "cache_creation_input_tokens is 0",
+        "no cache hit despite cache_control set",
+        "prompt caching has no effect on cost"
+      ],
+      "root_cause": "A `cache_control` breakpoint only creates a cache entry when the prefix up to that point meets the model's minimum: ~1024 tokens for Opus/Sonnet and ~2048 tokens for Haiku. Shorter prefixes are silently not cached.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/anthropic-prompt-caching-silently-does-nothing-below-the-min.md"
+    },
+    {
+      "id": "1cf67936-24fc-4392-818a-fec6806903d4",
+      "title": "asyncio.run() raises when called from inside a running event loop",
+      "category": "python",
+      "tags": [
+        "python",
+        "asyncio",
+        "event-loop"
+      ],
+      "symptoms": [
+        "RuntimeError: asyncio.run() cannot be called from a running event loop",
+        "This event loop is already running"
+      ],
+      "root_cause": "`asyncio.run()` creates and manages a new loop; calling it while a loop is already running (Jupyter, an async framework, a nested call) errors.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/python/asyncio-run-raises-when-called-from-inside-a-running-event-l.md"
+    },
+    {
+      "id": "224cb5e7-3e84-445c-b777-c22ee6f1839d",
+      "title": "Bare 'except:' swallows KeyboardInterrupt and SystemExit",
+      "category": "python",
+      "tags": [
+        "python",
+        "exceptions",
+        "gotcha"
+      ],
+      "symptoms": [
+        "Ctrl-C does not stop the program",
+        "process won't exit cleanly"
+      ],
+      "root_cause": "A bare `except:` (or `except BaseException`) catches `KeyboardInterrupt` and `SystemExit`, which inherit from `BaseException`, not `Exception`. Control-C gets swallowed.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/python/bare-except-swallows-keyboardinterrupt-and-systemexit.md"
+    },
+    {
+      "id": "24353f30-491e-46e5-9396-d669ca0b1317",
+      "title": "Claude Code Edit errors because the file was not Read first in the session",
+      "category": "claude-code",
+      "tags": [
+        "claude-code",
+        "tools",
+        "edit",
+        "read"
+      ],
+      "symptoms": [
+        "Edit failed: file has not been read",
+        "you must read the file before editing it"
+      ],
+      "root_cause": "The Edit tool requires the file to have been Read earlier in the same session so the harness can verify the pre-edit content. Editing an unread file is refused.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/claude-code/claude-code-edit-errors-because-the-file-was-not-read-first.md"
+    },
+    {
+      "id": "2baa0712-b832-4b56-a8c0-8b7519758c06",
+      "title": "MCP client calls tools before initialize and gets no tool list",
+      "category": "mcp",
+      "tags": [
+        "mcp",
+        "handshake",
+        "initialize"
+      ],
+      "symptoms": [
+        "tools/list returns empty before initialize",
+        "server rejects requests until initialized"
+      ],
+      "root_cause": "The MCP lifecycle requires the `initialize` request/response handshake before any `tools/list` or `tools/call`. Skipping it yields empty or rejected responses.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/mcp/mcp-client-calls-tools-before-initialize-and-gets-no-tool-li.md"
+    },
+    {
+      "id": "2cc975a1-9f47-4dc5-8962-9c9d9d4d6eb7",
+      "title": "MCP resources are read-only data and are not the right primitive for actions",
+      "category": "mcp",
+      "tags": [
+        "mcp",
+        "resources",
+        "tools"
+      ],
+      "symptoms": [
+        "client never 'runs' a resource",
+        "expected a side effect from a resource read"
+      ],
+      "root_cause": "MCP `resources` expose readable content (files, records) addressed by URI; `tools` perform actions. Modeling an action as a resource means it never executes.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/mcp/mcp-resources-are-read-only-data-and-are-not-the-right-primi.md"
+    },
+    {
+      "id": "3064f3c4-bd54-4518-8d8c-673b4b05d6ec",
+      "title": "An unquoted or empty variable in rm -rf can delete the filesystem root",
+      "category": "shell",
+      "tags": [
+        "shell",
+        "rm",
+        "data-loss"
+      ],
+      "symptoms": [
+        "rm: it is dangerous to operate recursively on '/'",
+        "files outside the intended directory deleted"
+      ],
+      "root_cause": "If a variable in `rm -rf \"$DIR/\"` is empty or unset, the command expands to `rm -rf /`. Word-splitting on unquoted variables compounds the danger.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "fix_unsafe": true,
+      "path": "pitfalls/shell/an-unquoted-or-empty-variable-in-rm-rf-can-delete-the-filesy.md"
+    },
+    {
+      "id": "33b311c7-9dc1-4b02-a67a-d30a14dab6b4",
+      "title": "Assistant message prefill fails when the content ends with trailing whitespace",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "prefill",
+        "assistant-turn"
+      ],
+      "symptoms": [
+        "final assistant content block must not end with trailing whitespace",
+        "messages: assistant message cannot have trailing whitespace"
+      ],
+      "root_cause": "When you prefill the assistant turn (to constrain output), the Messages API rejects a final assistant text block that ends in whitespace or a newline.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/assistant-message-prefill-fails-when-the-content-ends-with-t.md"
+    },
+    {
+      "id": "33d05c96-109e-4f9f-afa9-a87e8782cd74",
+      "title": "await inside Array.forEach does not wait; the loop finishes before the promises resolve",
+      "category": "typescript",
+      "tags": [
+        "typescript",
+        "javascript",
+        "async"
+      ],
+      "symptoms": [
+        "code after a forEach runs before the async work finishes",
+        "unhandled promise rejections from a forEach callback"
+      ],
+      "root_cause": "`Array.prototype.forEach` ignores the return value of its callback, so an `async` callback's promise is never awaited. The loop returns immediately.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/typescript/await-inside-array-foreach-does-not-wait-the-loop-finishes-b.md"
+    },
+    {
+      "id": "34cd7f75-ca5d-4054-9610-7d65d4dc5de1",
+      "title": "git push --force clobbers a teammate's commits; --force-with-lease would have refused",
+      "category": "git",
+      "tags": [
+        "git",
+        "push",
+        "force"
+      ],
+      "symptoms": [
+        "a colleague's commits disappeared from the remote branch",
+        "remote history rewritten over someone else's work"
+      ],
+      "root_cause": "`git push --force` overwrites the remote ref unconditionally, even if someone pushed after your last fetch. Their commits are lost from the branch tip.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/git/git-push-force-clobbers-a-teammate-s-commits-force-with-leas.md"
+    },
+    {
+      "id": "3eeb4033-7140-4990-8cbd-9a6f8f2bd902",
+      "title": "Using Bash grep/find instead of the Grep/Glob tools wastes context and misses .gitignore handling",
+      "category": "claude-code",
+      "tags": [
+        "claude-code",
+        "search",
+        "tools"
+      ],
+      "symptoms": [
+        "huge bash grep output floods context",
+        "slow ad-hoc find in a large repo"
+      ],
+      "root_cause": "The dedicated Grep and Glob tools are optimized for code search (ripgrep-backed, respect ignore files, compact output). Shelling out to `grep -r`/`find` is slower and dumps noisy output into context.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/claude-code/using-bash-grep-find-instead-of-the-grep-glob-tools-wastes-c.md"
+    },
+    {
+      "id": "406a4aa7-3719-4a9a-8415-3657a581c293",
+      "title": "datetime.utcnow() returns a naive datetime and is deprecated",
+      "category": "python",
+      "tags": [
+        "python",
+        "datetime",
+        "timezone"
+      ],
+      "symptoms": [
+        "DeprecationWarning: datetime.datetime.utcnow() is deprecated",
+        "naive datetime compared to aware datetime raises TypeError"
+      ],
+      "root_cause": "`datetime.utcnow()` returns a timezone-naive object that nonetheless represents UTC, causing silent bugs and TypeErrors when mixed with aware datetimes. It is deprecated in modern Python.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/python/datetime-utcnow-returns-a-naive-datetime-and-is-deprecated.md"
+    },
+    {
+      "id": "451f91b7-28df-4de2-9367-f987f53d250c",
+      "title": "LangChain ChatPromptTemplate raises KeyError on literal curly braces in the template",
+      "category": "langchain",
+      "tags": [
+        "langchain",
+        "prompts",
+        "templating"
+      ],
+      "symptoms": [
+        "KeyError on a brace-wrapped token that was meant to be literal",
+        "ValueError: Single '{' encountered in format string"
+      ],
+      "root_cause": "LangChain prompt templates use `{var}` for variables. Literal braces — JSON examples, code with `{}` — are parsed as variables and fail.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/langchain/langchain-chatprompttemplate-raises-keyerror-on-literal-curl.md"
+    },
+    {
+      "id": "47e5ce9a-a824-4a68-ae9a-b6e9254e72fd",
+      "title": "Gemini system instruction must be a separate parameter, not a contents entry",
+      "category": "google-genai",
+      "tags": [
+        "google-genai",
+        "gemini",
+        "system-instruction"
+      ],
+      "symptoms": [
+        "system instruction ignored when placed in contents",
+        "model does not follow the system prompt"
+      ],
+      "root_cause": "Gemini takes the system prompt via `system_instruction` on the model/config, not as a turn in `contents`. A 'system' turn in `contents` is invalid or ignored.",
+      "model_version": "Gemini (2025)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/google-genai/gemini-system-instruction-must-be-a-separate-parameter-not-a.md"
+    },
+    {
+      "id": "482abe33-28ab-4832-8f3b-899b3fda6d35",
+      "title": "Claude Code Read/Edit require absolute paths, not relative ones",
+      "category": "claude-code",
+      "tags": [
+        "claude-code",
+        "tools",
+        "paths"
+      ],
+      "symptoms": [
+        "file_path must be absolute",
+        "relative path rejected by Read/Edit"
+      ],
+      "root_cause": "The Read, Edit, and Write tools require an absolute `file_path`. Relative paths are rejected.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/claude-code/claude-code-read-edit-require-absolute-paths-not-relative-on.md"
+    },
+    {
+      "id": "4863ac9b-c691-4c6d-9466-65e5a1f3483f",
+      "title": "OpenAI streaming tool-call arguments arrive as fragments that must be concatenated",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "streaming",
+        "tool-calls"
+      ],
+      "symptoms": [
+        "json.decoder.JSONDecodeError when parsing tool call arguments",
+        "tool call arguments look truncated in streamed chunks"
+      ],
+      "root_cause": "In a streamed completion, `tool_calls[].function.arguments` is delivered as a sequence of string deltas across many chunks. Parsing any single chunk's fragment as JSON fails.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/openai-streaming-tool-call-arguments-arrive-as-fragments-tha.md"
+    },
+    {
+      "id": "48e64fec-4204-49fc-83bb-5cd150ab1873",
+      "title": "Filenames with spaces break a for loop over unquoted command substitution",
+      "category": "shell",
+      "tags": [
+        "shell",
+        "bash",
+        "word-splitting"
+      ],
+      "symptoms": [
+        "loop iterates over fragments of a filename",
+        "No such file or directory for a name that exists"
+      ],
+      "root_cause": "`for f in $(ls)` and unquoted `$(...)` split on whitespace, so a file named `my file.txt` becomes two iterations.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/shell/filenames-with-spaces-break-a-for-loop-over-unquoted-command.md"
+    },
+    {
+      "id": "52c01301-df3d-40ac-b639-73452d0eca76",
+      "title": "Piping a remote script straight into a shell runs unverified code as you",
+      "category": "shell",
+      "tags": [
+        "shell",
+        "security",
+        "supply-chain"
+      ],
+      "symptoms": [
+        "arbitrary code execution from a compromised or MITM'd installer URL"
+      ],
+      "root_cause": "`curl … | sh` executes whatever the server returns, with no chance to inspect it, and a partial download can execute half a script. A compromised host or hijacked TLS becomes code execution on your machine.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "fix_unsafe": true,
+      "path": "pitfalls/shell/piping-a-remote-script-straight-into-a-shell-runs-unverified.md"
+    },
+    {
+      "id": "552eae0a-c25f-413d-84d0-5b6f7673a7b6",
+      "title": "Dockerfile busts the layer cache by copying source before installing dependencies",
+      "category": "docker",
+      "tags": [
+        "docker",
+        "dockerfile",
+        "build-cache"
+      ],
+      "symptoms": [
+        "every build reinstalls all dependencies",
+        "slow Docker builds on small code changes"
+      ],
+      "root_cause": "`COPY . .` before the dependency install means any source change invalidates the install layer, so dependencies reinstall on every build.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/docker/dockerfile-busts-the-layer-cache-by-copying-source-before-in.md"
+    },
+    {
+      "id": "593dbf79-bdf1-4c9d-9894-392cef412aef",
+      "title": "OpenAI JSON mode errors unless the word 'json' appears in the messages",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "json-mode",
+        "response-format"
+      ],
+      "symptoms": [
+        "'messages' must contain the word 'json' in some form to use 'response_format' of type 'json_object'"
+      ],
+      "root_cause": "`response_format={'type':'json_object'}` requires the string `json` to appear somewhere in the prompt, as a guard against silent infinite-whitespace generation.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/openai-json-mode-errors-unless-the-word-json-appears-in-the.md"
+    },
+    {
+      "id": "5dcbc0a5-ed7f-4b02-83bb-54faffc0be85",
+      "title": "LangChain output truncated because max_tokens defaulted too low on the chat model",
+      "category": "langchain",
+      "tags": [
+        "langchain",
+        "chat-models",
+        "max-tokens"
+      ],
+      "symptoms": [
+        "completions are cut short through LangChain but fine via the raw SDK",
+        "long generations stop early"
+      ],
+      "root_cause": "Some LangChain chat-model wrappers set a conservative default `max_tokens`. The cap silently truncates long outputs even though the underlying API would allow more.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/langchain/langchain-output-truncated-because-max-tokens-defaulted-too.md"
+    },
+    {
+      "id": "5ec275fe-5f93-4aba-8d27-9aec68125d4d",
+      "title": "OpenAI embeddings call fails when a single input exceeds the model token limit",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "embeddings",
+        "token-limit"
+      ],
+      "symptoms": [
+        "maximum context length is 8192 tokens, however you requested ...",
+        "400 on embeddings input"
+      ],
+      "root_cause": "Embedding models cap input at ~8192 tokens per item. Long documents must be chunked before embedding.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/openai-embeddings-call-fails-when-a-single-input-exceeds-the.md"
+    },
+    {
+      "id": "61811aca-c838-421e-8c3f-77a0299ee235",
+      "title": "MCP tool handler returns a bare string instead of a content list",
+      "category": "mcp",
+      "tags": [
+        "mcp",
+        "tools",
+        "content"
+      ],
+      "symptoms": [
+        "validation error: content is not a list",
+        "client shows nothing for a tool that 'worked'"
+      ],
+      "root_cause": "An MCP `call_tool` handler must return a list of content blocks (e.g. `TextContent`), not a raw string or dict. A bare return value fails validation or renders as empty.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/mcp/mcp-tool-handler-returns-a-bare-string-instead-of-a-content.md"
+    },
+    {
+      "id": "64993e80-f4cc-4843-9b7a-7cfaf23d7a62",
+      "title": "Claude Code Bash: exported env vars and cd do not persist across separate Bash calls for shell state",
+      "category": "claude-code",
+      "tags": [
+        "claude-code",
+        "bash",
+        "shell-state"
+      ],
+      "symptoms": [
+        "environment variable set in one command is empty in the next",
+        "a function defined earlier is not found later"
+      ],
+      "root_cause": "Each Bash tool call starts a fresh shell initialized from the profile. The working directory persists between calls, but shell state — exported env vars, shell functions, `set` options — does not.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/claude-code/claude-code-bash-exported-env-vars-and-cd-do-not-persist-acr.md"
+    },
+    {
+      "id": "67b1c108-4517-4380-bdfe-afe185db9305",
+      "title": "Output truncated silently because stop_reason was max_tokens, not end_turn",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "max-tokens",
+        "truncation"
+      ],
+      "symptoms": [
+        "response cut off mid-sentence",
+        "JSON output from the model fails to parse",
+        "stop_reason: max_tokens"
+      ],
+      "root_cause": "When generation hits the `max_tokens` ceiling, the API returns a complete, successful response whose `stop_reason` is `max_tokens`. The text is truncated but no error is raised.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/output-truncated-silently-because-stop-reason-was-max-tokens.md"
+    },
+    {
+      "id": "6fc9ab6f-5c25-4094-9990-83c9b0a64ed9",
+      "title": "OpenAI reasoning models reject temperature and top_p",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "reasoning-models",
+        "sampling"
+      ],
+      "symptoms": [
+        "Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+        "400 on o1/o3 when sampling params are set"
+      ],
+      "root_cause": "Reasoning models do not accept custom `temperature`, `top_p`, `presence_penalty`, or `frequency_penalty`; only default values are allowed.",
+      "model_version": "o1 / o3 / o4 (2025+)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/openai-reasoning-models-reject-temperature-and-top-p.md"
+    },
+    {
+      "id": "7153009b-f97a-4ad1-92a5-57f197202c35",
+      "title": "Anthropic tool_result must be in a user message and reference the matching tool_use_id",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "tool-use",
+        "tool-result"
+      ],
+      "symptoms": [
+        "tool_result block(s) provided when previous message does not contain tool_use",
+        "Each tool_result must have a tool_use_id matching a prior tool_use"
+      ],
+      "root_cause": "Tool results are delivered as a `tool_result` content block inside a `user` message, and each must carry the `tool_use_id` of the corresponding `tool_use` block from the previous assistant turn.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/anthropic-tool-result-must-be-in-a-user-message-and-referenc.md"
+    },
+    {
+      "id": "7586d573-6202-4761-8b1e-a1177a5e5e42",
+      "title": "Anthropic vision request fails without media_type on a base64 image source",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "vision",
+        "images"
+      ],
+      "symptoms": [
+        "messages.X.content.Y.image.source.media_type: Field required",
+        "image not accepted"
+      ],
+      "root_cause": "An image content block with `source.type=base64` requires both `media_type` (e.g. image/png) and base64 `data`. Omitting `media_type` is rejected.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/anthropic-vision-request-fails-without-media-type-on-a-base6.md"
+    },
+    {
+      "id": "7a2ba103-4b26-4078-928c-18fc9d555a47",
+      "title": "Anthropic Messages API request fails because max_tokens was omitted",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "messages",
+        "max-tokens"
+      ],
+      "symptoms": [
+        "max_tokens: Field required",
+        "TypeError: create() missing 1 required keyword-only argument: 'max_tokens'"
+      ],
+      "root_cause": "Unlike some APIs where the token cap is optional, the Anthropic Messages API requires `max_tokens` on every request.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/anthropic-messages-api-request-fails-because-max-tokens-was.md"
+    },
+    {
+      "id": "8007305a-6b8e-49eb-87a0-4d56eac9583a",
+      "title": "OpenAI reasoning models reject max_tokens; they require max_completion_tokens",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "reasoning-models",
+        "max-tokens"
+      ],
+      "symptoms": [
+        "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+        "400 invalid_request_error on o1/o3/o4 calls"
+      ],
+      "root_cause": "Reasoning models (o1, o3, o4 family) count hidden reasoning tokens toward output and replaced `max_tokens` with `max_completion_tokens`, which bounds reasoning + visible output together.",
+      "model_version": "o1 / o3 / o4 (2025+)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/openai-reasoning-models-reject-max-tokens-they-require-max-c.md"
+    },
+    {
+      "id": "8358c2d4-b1a7-4284-bc5d-9d5b5c9747b2",
+      "title": "OpenAI 'system' role is rejected by reasoning models, which expect 'developer'",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "reasoning-models",
+        "roles"
+      ],
+      "symptoms": [
+        "Unsupported value: 'messages[0].role' does not support 'system' with this model",
+        "developer role expected"
+      ],
+      "root_cause": "Reasoning models renamed the steering role from `system` to `developer`. Sending `role: system` to them is rejected.",
+      "model_version": "o1 / o3 / o4 (2025+)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/openai-system-role-is-rejected-by-reasoning-models-which-exp.md"
+    },
+    {
+      "id": "88507e60-b9a8-4441-a7bc-3f598e8a01e9",
+      "title": "Anthropic Messages API rejects a system prompt sent as a role:system message",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "messages",
+        "system-prompt"
+      ],
+      "symptoms": [
+        "messages: Input should be 'user' or 'assistant'",
+        "system role is not supported in the messages array"
+      ],
+      "root_cause": "The Messages API takes the system prompt as a top-level `system` parameter, not as an entry in the `messages` array. Only `user` and `assistant` roles are valid inside `messages`.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/anthropic-messages-api-rejects-a-system-prompt-sent-as-a-rol.md"
+    },
     {
       "id": "8f3d9e2a-1c4b-4a7e-9d8c-2e5f1a3b7c9d",
       "title": "Claude Code Edit tool fails when old_string includes the line-number prefix from Read output",
@@ -22,6 +641,353 @@
       "verified_count": 0,
       "created": "2026-05-28",
       "path": "pitfalls/claude-code/edit-tool-line-number-prefix.md"
+    },
+    {
+      "id": "9070a723-1641-45ef-bdc6-0004fbad78b2",
+      "title": "Retrying an Anthropic 529 overloaded_error without backoff makes the overload worse",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "rate-limits",
+        "retry"
+      ],
+      "symptoms": [
+        "529 overloaded_error",
+        "Error: Overloaded"
+      ],
+      "root_cause": "A 529 means the service is temporarily overloaded. Tight retry loops add load and prolong the failure.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/retrying-an-anthropic-529-overloaded-error-without-backoff-m.md"
+    },
+    {
+      "id": "93f4fb49-5a74-4906-9564-079c7081d34f",
+      "title": "Missing .dockerignore sends the whole working tree as build context",
+      "category": "docker",
+      "tags": [
+        "docker",
+        "dockerignore",
+        "build-context"
+      ],
+      "symptoms": [
+        "docker build is slow and uploads gigabytes of context",
+        "node_modules or .git copied into the image"
+      ],
+      "root_cause": "Without a `.dockerignore`, `docker build` sends everything in the context dir to the daemon, and `COPY . .` can pull in `.git`, `node_modules`, caches, and secrets.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/docker/missing-dockerignore-sends-the-whole-working-tree-as-build-c.md"
+    },
+    {
+      "id": "9615adbb-3603-40b5-890a-aa057d7cbf50",
+      "title": "Ignoring Retry-After on a 429 makes rate limiting worse",
+      "category": "http",
+      "tags": [
+        "http",
+        "rate-limits",
+        "http-429"
+      ],
+      "symptoms": [
+        "429 Too Many Requests in a tight loop",
+        "ban or longer backoff from the server"
+      ],
+      "root_cause": "A `429` (and some `503`) responses include a `Retry-After` header telling you when to retry. Ignoring it and hammering extends the limit window.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/http/ignoring-retry-after-on-a-429-makes-rate-limiting-worse.md"
+    },
+    {
+      "id": "9e6f11d9-09b8-461f-a1a2-6b3484486837",
+      "title": "set -e does not abort on a failing command in the middle of a pipeline",
+      "category": "shell",
+      "tags": [
+        "shell",
+        "bash",
+        "error-handling"
+      ],
+      "symptoms": [
+        "script continues after a piped command failed",
+        "exit code of the pipeline is 0 despite an upstream failure"
+      ],
+      "root_cause": "Under `set -e`, only the pipeline's last command's exit status matters by default. A failure in `cmd1 | cmd2` is hidden if `cmd2` succeeds.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/shell/set-e-does-not-abort-on-a-failing-command-in-the-middle-of-a.md"
+    },
+    {
+      "id": "abd63bb2-3ac4-4210-be89-ff23eb33073a",
+      "title": "Extended thinking breaks on the next turn when prior thinking blocks are dropped",
+      "category": "anthropic-api",
+      "tags": [
+        "anthropic-api",
+        "extended-thinking",
+        "tool-use"
+      ],
+      "symptoms": [
+        "messages.X.content: thinking block is required",
+        "Expected `thinking` block before tool_use when extended thinking is enabled"
+      ],
+      "root_cause": "When extended thinking is enabled together with tool use, the assistant's `thinking` (and `redacted_thinking`) blocks from a turn must be passed back verbatim in the conversation history for subsequent turns. Stripping them to 'save tokens' invalidates the turn.",
+      "model_version": "claude (extended thinking, 2025+)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/anthropic-api/extended-thinking-breaks-on-the-next-turn-when-prior-thinkin.md"
+    },
+    {
+      "id": "abde2fca-8a5a-43fa-81eb-65826fc23d2f",
+      "title": "Blindly retrying non-idempotent HTTP requests duplicates side effects",
+      "category": "http",
+      "tags": [
+        "http",
+        "retry",
+        "idempotency"
+      ],
+      "symptoms": [
+        "duplicate charges or records after a retry",
+        "double POST on timeout"
+      ],
+      "root_cause": "Retrying a POST/PATCH that timed out can execute the action twice if the first attempt actually succeeded server-side. Only idempotent methods (GET, PUT, DELETE) are safe to retry blindly.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/http/blindly-retrying-non-idempotent-http-requests-duplicates-sid.md"
+    },
+    {
+      "id": "ae3a19f6-7d93-4f17-9db0-63108ee018e0",
+      "title": "JSON.parse returns any, erasing type safety on external data",
+      "category": "typescript",
+      "tags": [
+        "typescript",
+        "json",
+        "validation"
+      ],
+      "symptoms": [
+        "runtime shape errors on parsed JSON that 'typechecked'",
+        "undefined property access on API responses"
+      ],
+      "root_cause": "`JSON.parse` is typed as returning `any`, so the compiler trusts whatever type you assert. Malformed or unexpected payloads pass typechecking and explode at runtime.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/typescript/json-parse-returns-any-erasing-type-safety-on-external-data.md"
+    },
+    {
+      "id": "c09d5356-bba0-47c1-8463-4bcaf52080e7",
+      "title": "Claude Code Edit fails when old_string is not unique in the file",
+      "category": "claude-code",
+      "tags": [
+        "claude-code",
+        "tools",
+        "edit"
+      ],
+      "symptoms": [
+        "Edit failed: old_string appears multiple times",
+        "found N matches for old_string; expected 1"
+      ],
+      "root_cause": "The Edit tool replaces a single unique occurrence by default. If `old_string` matches more than once, it refuses rather than guess.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/claude-code/claude-code-edit-fails-when-old-string-is-not-unique-in-the.md"
+    },
+    {
+      "id": "c1c83eb0-8e0d-4cda-93d2-5a4b29a820f5",
+      "title": "Setting seed does not guarantee identical OpenAI completions",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "determinism",
+        "seed"
+      ],
+      "symptoms": [
+        "outputs differ run-to-run despite a fixed seed"
+      ],
+      "root_cause": "`seed` makes sampling best-effort reproducible but is not a hard guarantee; backend changes shift `system_fingerprint` and outputs can still vary.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/setting-seed-does-not-guarantee-identical-openai-completions.md"
+    },
+    {
+      "id": "c21d3297-878b-46f2-a4cf-a24b753d3c85",
+      "title": "process.env values are always strings, so numeric and boolean comparisons mislead",
+      "category": "typescript",
+      "tags": [
+        "typescript",
+        "node",
+        "env"
+      ],
+      "symptoms": [
+        "PORT comparison or arithmetic behaves oddly",
+        "process.env.DEBUG === true is always false"
+      ],
+      "root_cause": "Every `process.env.X` is a string or undefined. `process.env.FLAG === true` is always false; `process.env.PORT + 1` concatenates.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/typescript/process-env-values-are-always-strings-so-numeric-and-boolean.md"
+    },
+    {
+      "id": "c44f14f3-ebd4-4ba5-b7e6-1ed6c763d5aa",
+      "title": "git clean -fdx deletes untracked files including ignored ones like .env and build caches",
+      "category": "git",
+      "tags": [
+        "git",
+        "clean",
+        "data-loss"
+      ],
+      "symptoms": [
+        ".env or local config deleted by git clean",
+        "untracked but important files removed"
+      ],
+      "root_cause": "`git clean -fdx` removes all untracked files and directories, and `-x` additionally removes git-ignored files — which often includes local `.env`, credentials, and caches you wanted to keep.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/git/git-clean-fdx-deletes-untracked-files-including-ignored-ones.md"
+    },
+    {
+      "id": "c46c7cb8-444d-4237-b880-48e22cf10a1b",
+      "title": "Python mutable default argument is shared across all calls",
+      "category": "python",
+      "tags": [
+        "python",
+        "gotcha",
+        "functions"
+      ],
+      "symptoms": [
+        "a list/dict default 'remembers' values between calls",
+        "unexpected accumulation in a default argument"
+      ],
+      "root_cause": "Default argument values are evaluated once at function definition, so a mutable default (`[]`, `{}`) is shared by every call that uses the default.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/python/python-mutable-default-argument-is-shared-across-all-calls.md"
+    },
+    {
+      "id": "ca1da3d4-b1e4-4f0f-adb3-f4377cdef23a",
+      "title": "OpenAI tool-call arguments are a JSON string, not a dict",
+      "category": "openai-api",
+      "tags": [
+        "openai-api",
+        "tool-calls",
+        "function-calling"
+      ],
+      "symptoms": [
+        "TypeError: string indices must be integers",
+        "treating arguments as a dict raises"
+      ],
+      "root_cause": "`tool_calls[].function.arguments` is always a JSON-encoded string, even in non-streaming responses. It is never pre-parsed into an object.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/openai-api/openai-tool-call-arguments-are-a-json-string-not-a-dict.md"
+    },
+    {
+      "id": "d4b238fa-7427-4a75-9f05-4d59dfc9562e",
+      "title": "MCP stdio server corrupts the protocol by writing logs to stdout",
+      "category": "mcp",
+      "tags": [
+        "mcp",
+        "stdio",
+        "logging"
+      ],
+      "symptoms": [
+        "client fails to parse server message",
+        "Unexpected token in JSON",
+        "MCP handshake hangs or errors after a print() call"
+      ],
+      "root_cause": "An MCP stdio server speaks JSON-RPC over stdout. Any stray `print()` or library log that writes to stdout interleaves with protocol frames and corrupts them.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/mcp/mcp-stdio-server-corrupts-the-protocol-by-writing-logs-to-st.md"
+    },
+    {
+      "id": "df2c61e7-efa3-4f4f-ac5a-344145835cb2",
+      "title": "Gemini returns empty text because the response was blocked by default safety settings",
+      "category": "google-genai",
+      "tags": [
+        "google-genai",
+        "gemini",
+        "safety"
+      ],
+      "symptoms": [
+        "response.text raises because no Part was returned",
+        "finish_reason: SAFETY",
+        "candidate has no content"
+      ],
+      "root_cause": "Gemini applies safety filters by default. When a category trips, the candidate is returned with `finish_reason=SAFETY` and no text part, so accessing `.text` raises.",
+      "model_version": "Gemini (2025)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/google-genai/gemini-returns-empty-text-because-the-response-was-blocked-b.md"
+    },
+    {
+      "id": "e89f1cf7-8378-4e09-8ae3-0c11101a5c9e",
+      "title": "MCP tool inputSchema must be a JSON Schema object with type 'object' at the root",
+      "category": "mcp",
+      "tags": [
+        "mcp",
+        "tools",
+        "schema"
+      ],
+      "symptoms": [
+        "tool arguments not validated or passed",
+        "client cannot construct a form for the tool"
+      ],
+      "root_cause": "A tool's `inputSchema` must be a JSON Schema whose root `type` is `object` with a `properties` map. A non-object root (array, string) or a missing `type` prevents clients from building/validating arguments.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/mcp/mcp-tool-inputschema-must-be-a-json-schema-object-with-type.md"
+    },
+    {
+      "id": "f510deea-98fb-4fc0-ad9b-547500f541e1",
+      "title": "Gemini API rejects role 'assistant'; the model role is 'model'",
+      "category": "google-genai",
+      "tags": [
+        "google-genai",
+        "gemini",
+        "roles"
+      ],
+      "symptoms": [
+        "Please use a valid role: user, model.",
+        "400 INVALID_ARGUMENT on contents role"
+      ],
+      "root_cause": "The Gemini API uses `user` and `model` as the two conversation roles. `assistant` (the OpenAI/Anthropic name) is invalid.",
+      "model_version": "Gemini (2025)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/google-genai/gemini-api-rejects-role-assistant-the-model-role-is-model.md"
+    },
+    {
+      "id": "ff3e3d7f-bf91-4a42-b59c-6e1056682714",
+      "title": "CMD in shell form does not forward SIGTERM, so the container ignores graceful shutdown",
+      "category": "docker",
+      "tags": [
+        "docker",
+        "signals",
+        "pid1"
+      ],
+      "symptoms": [
+        "container takes 10s to stop then is SIGKILLed",
+        "app never receives SIGTERM"
+      ],
+      "root_cause": "Shell-form `CMD app` runs the process as a child of `/bin/sh`, which is PID 1 and does not forward signals. `docker stop` sends SIGTERM to PID 1 (the shell), not your app.",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/docker/cmd-in-shell-form-does-not-forward-sigterm-so-the-container.md"
+    },
+    {
+      "id": "fff89f12-f0cd-4a87-b1eb-ca7340569a70",
+      "title": "Gemini multi-turn fails when user and model turns do not strictly alternate",
+      "category": "google-genai",
+      "tags": [
+        "google-genai",
+        "gemini",
+        "conversation"
+      ],
+      "symptoms": [
+        "Please ensure that multiturn requests alternate between user and model.",
+        "400 on contents with consecutive same-role turns"
+      ],
+      "root_cause": "Gemini requires `contents` to alternate user/model. Two consecutive user turns (e.g. a system-ish preamble plus the real question both as `user`) are rejected.",
+      "model_version": "Gemini (2025)",
+      "verified_count": 0,
+      "created": "2026-05-28",
+      "path": "pitfalls/google-genai/gemini-multi-turn-fails-when-user-and-model-turns-do-not-str.md"
     }
   ]
 }

@@ -371,6 +371,21 @@ def _submit_repo() -> tuple[str, str, str]:
     return owner, repo, ref
 
 
+def redact(text: str, *secrets_to_mask: str) -> str:
+    """A42 — mask any provided secret (and common GitHub token shapes) in a string
+    before it can reach a log, an error message, or a tool response.
+    """
+    out = text or ""
+    for secret in secrets_to_mask:
+        if secret and len(secret) >= 8:
+            out = out.replace(secret, "***REDACTED***")
+    # Defense in depth: scrub anything that looks like a GitHub token even if the
+    # exact value was not passed in.
+    out = re.sub(r"gh[opsur]_[A-Za-z0-9]{20,}", "***REDACTED***", out)
+    out = re.sub(r"github_pat_[A-Za-z0-9_]{20,}", "***REDACTED***", out)
+    return out
+
+
 def _gh_headers(token: str) -> dict[str, str]:
     return {
         "Accept": "application/vnd.github+json",
@@ -412,7 +427,7 @@ def submit(source: StumblestackSource, build_result: BuildResult, *, dry_run: bo
     with httpx.Client(timeout=20.0, headers=headers) as client:
         base_ref = client.get(f"{GITHUB_API}/repos/{owner}/{repo}/git/ref/heads/{base}")
         if base_ref.status_code != 200:
-            raise SubmitError(f"base ref lookup failed: {base_ref.status_code} {base_ref.text}")
+            raise SubmitError(redact(f"base ref lookup failed: {base_ref.status_code} {base_ref.text}", token))
         base_sha = base_ref.json()["object"]["sha"]
 
         created = client.post(
@@ -426,7 +441,7 @@ def submit(source: StumblestackSource, build_result: BuildResult, *, dry_run: bo
                 json={"ref": f"refs/heads/{branch}", "sha": base_sha},
             )
         if created.status_code not in (200, 201):
-            raise SubmitError(f"branch create failed: {created.status_code} {created.text}")
+            raise SubmitError(redact(f"branch create failed: {created.status_code} {created.text}", token))
 
         content_b64 = base64.b64encode(build_result.markdown.encode("utf-8")).decode("ascii")
         put = client.put(
@@ -438,7 +453,7 @@ def submit(source: StumblestackSource, build_result: BuildResult, *, dry_run: bo
             },
         )
         if put.status_code not in (200, 201):
-            raise SubmitError(f"file create failed: {put.status_code} {put.text}")
+            raise SubmitError(redact(f"file create failed: {put.status_code} {put.text}", token))
 
         pr_body_lines = [
             f"Submitted via stumblestack-mcp by `{build_result.record.get('agent', 'unknown')}`",
@@ -472,7 +487,7 @@ def submit(source: StumblestackSource, build_result: BuildResult, *, dry_run: bo
             },
         )
         if pr.status_code not in (200, 201):
-            raise SubmitError(f"PR create failed: {pr.status_code} {pr.text}")
+            raise SubmitError(redact(f"PR create failed: {pr.status_code} {pr.text}", token))
         pr_url = pr.json().get("html_url")
 
     return SubmitResult(
