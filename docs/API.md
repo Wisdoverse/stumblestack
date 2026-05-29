@@ -109,6 +109,16 @@ as the site and MCP server, and renders the top matches into a container it
 inserts after the script tag. It builds DOM with `createElement`/`textContent`
 only (no `innerHTML`/`eval`), so it is safe to include under a strict CSP.
 
+### `GET /api/v1/embeddings.json` (optional — may 404)
+
+When semantic search is enabled, this holds one normalized vector per pitfall id
+(`{schema_version, model, dim, normalized, count, vectors:{<id>:[...]}}`). It is
+**optional**: absent by default, in which case search is lexical. A consumer that
+wants semantic ranking embeds its query with the **same model** named here and
+ranks by cosine similarity. The MCP server does this automatically when
+`STUMBLESTACK_EMBED_PROVIDER` is set and a matching artifact is published; otherwise
+it stays lexical (`search_pitfalls` reports which via a `ranker` field).
+
 ## Subscribing to updates
 
 There is no custom push service — GitHub already provides delivery, retries, and

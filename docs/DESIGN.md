@@ -123,7 +123,11 @@ What is explicitly *not* trusted at v0.1: the `fix` field. It is freeform text. 
 
 These are noted so reviewers know they are deliberately deferred:
 
-- Semantic search via embeddings (server-side, then optionally client-side via wasm).
+- Semantic search via embeddings: the **seam is shipped** (optional `embeddings.json`;
+  the MCP server prefers cosine ranking when `STUMBLESTACK_EMBED_PROVIDER` is set and a
+  matching artifact exists, else lexical). A built-in deterministic `local-hash`
+  provider exercises the pipeline; a real model provider (key-gated, via
+  `.github/workflows/embeddings.yml`) is the remaining piece. Default is lexical.
 - Cryptographic provenance for submissions (GitHub OIDC → sigstore / cosign).
 - Bot verifier that reproduces a submission and bumps `verified_count`.
 - Multi-tenant private corpora (per-org repos that consume the public one).

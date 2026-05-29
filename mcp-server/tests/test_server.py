@@ -62,3 +62,9 @@ def test_banner_in_get_pitfalls():
     pid = s["results"][0]["id"]
     d = _call("get_pitfalls", {"ids": [pid]})
     assert "advisory" in d and d["advisory"].startswith("stumblestack advisory")
+
+
+def test_search_defaults_to_lexical_ranker():
+    # No embeddings.json published + no provider => lexical (live behavior).
+    d = _call("search_pitfalls", {"query": "edit", "top_k": 1})
+    assert d["ranker"] == "lexical"

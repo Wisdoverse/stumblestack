@@ -51,6 +51,7 @@ Override with env vars:
 | `STUMBLESTACK_SUBMIT_REPO` | Target for `submit_pitfall` PRs (default: same as `STUMBLESTACK_REMOTE`) | `Wisdoverse/stumblestack@main` |
 | `GITHUB_TOKEN` / `GH_TOKEN` | Required by `submit_pitfall` (non-dry-run). Scopes: `repo` (classic) or Contents+Pull-requests: write (fine-grained). | `ghp_...` |
 | `STUMBLESTACK_TELEMETRY` | Opt-in. When truthy (`1`/`true`/`yes`/`on`), emit one PII-free JSON line per tool call to **stderr** (tool, latency_ms, result_count, cache_age, ok). Default off. | `1` |
+| `STUMBLESTACK_EMBED_PROVIDER` | Opt-in semantic search. `none` (default) → lexical. `local-hash` → deterministic test embedding. A real provider + a matching `embeddings.json` enables cosine ranking. | `local-hash` |
 
 ## Claude Desktop
 

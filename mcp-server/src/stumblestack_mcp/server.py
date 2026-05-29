@@ -12,7 +12,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
-from . import telemetry
+from . import embeddings, telemetry
 from .search import search
 from .source import StumblestackSource
 from .submit import SubmitError, redact
@@ -311,16 +311,30 @@ async def _dispatch(name: str, arguments: dict[str, Any] | None) -> list[TextCon
         if name == "search_pitfalls":
             query = args.get("query") or ""
             top_k = _coerce_top_k(args.get("top_k"))
-            hits = search(
-                source.entries(),
-                query,
-                category=args.get("category"),
-                top_k=top_k,
-                model=args.get("model_version"),
-            )
+            category = args.get("category")
+            model = args.get("model_version")
+            entries = source.entries()
+
+            # Prefer semantic search ONLY when an operator has configured a provider
+            # AND a matching embeddings.json is published. Otherwise (the default),
+            # fall back to deterministic lexical search.
+            ranker = "lexical"
+            hits = None
+            qvec = embeddings.embed_query(query) if query else None
+            if qvec is not None:
+                emb = embeddings.load_embeddings(source)
+                if emb is not None and embeddings.usable(emb, embeddings.provider_model()):
+                    hits = embeddings.cosine_search(
+                        entries, qvec, emb, category=category, top_k=top_k, model=model
+                    )
+                    ranker = "embeddings"
+            if hits is None:
+                hits = search(entries, query, category=category, top_k=top_k, model=model)
+
             payload = {
                 "advisory": ADVISORY_BANNER,
                 "query": query,
+                "ranker": ranker,
                 "count": len(hits),
                 "origin": source.origin(),
                 "cache_age_seconds": source.cache_age_seconds(),

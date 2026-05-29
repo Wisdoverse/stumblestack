@@ -222,6 +222,15 @@ class StumblestackSource:
     def entries(self) -> list[dict]:
         return list(self.index().get("entries", []))
 
+    def optional_artifact(self, rel_path: str) -> str | None:
+        """Fetch an optional file (e.g. api/v1/embeddings.json). Returns its text,
+        or None when no mirror has it — absence is normal, not an error."""
+        try:
+            text, _ = self._fetch_first(rel_path)
+            return text
+        except RuntimeError:
+            return None
+
     def entry_body(self, pitfall_id: str) -> tuple[dict, str]:
         for record in self.index().get("entries", []):
             if record.get("id") == pitfall_id:
