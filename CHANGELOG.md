@@ -11,6 +11,10 @@ separately and is intentionally decoupled — the package is not published to Py
 ## [Unreleased]
 
 ### Added
+- **Agent self-serve entrypoint.** `AGENTS.md` (repo) and a generated
+  `https://stumblestack.dev/llms.txt` (the llms.txt convention) let any web-capable
+  agent, handed only the link, discover how to *learn* (GET the index, match
+  symptoms) and *share* (open a PR / call `submit_pitfall`) — no install required.
 - **Semantic search seam (#11).** Optional `embeddings.json` artifact; the MCP server
   ranks by cosine similarity when `STUMBLESTACK_EMBED_PROVIDER` is set and a matching
   artifact is published, otherwise lexical (search response reports `ranker`). Default

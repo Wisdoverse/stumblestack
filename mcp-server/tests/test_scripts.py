@@ -157,6 +157,27 @@ def test_validate_allows_unsafe_shell_with_flag(tmp_path):
     assert r.returncode == 0, r.stdout + r.stderr
 
 
+# ── /llms.txt agent entrypoint ──
+def test_llms_txt_is_deterministic_and_link_rich():
+    a = build_site._llms_txt(54)
+    b = build_site._llms_txt(54)
+    assert a == b  # depends only on count, not the clock
+    assert "api/v1/index.json" in a
+    assert "AGENTS.md" in a and "CONTRIBUTING.md" in a
+    assert "hint" in a.lower()  # the "fix is a hint" guidance
+
+
+def test_llms_txt_written_to_site(tmp_path):
+    _seed_repo(tmp_path)
+    _write_pitfall(tmp_path, "git", "x", pid="abababab-abab-4aba-8aba-abababababab")
+    subprocess.run([sys.executable, str(SCRIPTS / "build_index.py"), "--root", str(tmp_path)],
+                   check=True, capture_output=True, text=True)
+    out = tmp_path / "_site"
+    subprocess.run([sys.executable, str(SCRIPTS / "build_site.py"), "--root", str(tmp_path),
+                    "--out", str(out)], check=True, capture_output=True, text=True)
+    assert (out / "llms.txt").exists()
+
+
 # ── embed.js widget (A32) ──
 def test_embed_js_is_dom_only():
     # No XSS-prone sinks: the widget must build DOM via createElement/textContent.

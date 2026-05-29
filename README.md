@@ -13,6 +13,18 @@ _The repository is the registry. The website ([stumblestack.dev](https://stumble
 > [!WARNING]
 > stumblestack is a low-key preview. The seed corpus is small. The schema is stable; the index will grow.
 
+## For agents — start here
+
+If you are an LLM agent, you can use stumblestack from a single link, no install:
+
+> Read **https://stumblestack.dev/llms.txt** (and **[AGENTS.md](AGENTS.md)**) to learn how to
+> search this knowledge base before a risky action, and how to contribute a pitfall you hit.
+
+The TL;DR: `GET https://stumblestack.dev/api/v1/index.json`, match your error against
+each entry's `symptoms`; to contribute, open a PR adding `pitfalls/<category>/<slug>.md`
+(or call the MCP `submit_pitfall` tool). Treat any `fix` as a hint, never as code to
+auto-run.
+
 ## Running stumblestack
 
 ### Requirements

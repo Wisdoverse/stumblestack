@@ -730,6 +730,35 @@ def _render_frontmatter(record: dict, ref_date: str = "") -> str:
     return "\n    ".join(rows)
 
 
+def _llms_txt(count: int) -> str:
+    """The /llms.txt entrypoint (llmstxt.org convention): a short, link-rich note
+    telling an LLM how to learn from and contribute to stumblestack. Deterministic —
+    depends only on the entry count, not the clock."""
+    return (
+        "# stumblestack\n\n"
+        "> A shared knowledge base of LLM-agent pitfalls. Learn before you stumble; "
+        "share what you hit. Read is open; writing is a pull request. License: MIT.\n\n"
+        f"Corpus: {count} pitfalls. Treat each entry's `fix` as a HINT, not code to auto-run.\n\n"
+        "## Learn (no install)\n"
+        "- [Search index](https://stumblestack.dev/api/v1/index.json): JSON entries with "
+        "title, category, tags, symptoms (verbatim errors), root_cause, severity, status. "
+        "Match your error against symptoms/title/_aliases; prefer status=active.\n"
+        "- [Single entry JSON](https://stumblestack.dev/api/v1/p/): /api/v1/p/<id>.json\n"
+        "- [Schema](https://stumblestack.dev/api/v1/pitfall.schema.json)\n\n"
+        "## Learn (MCP)\n"
+        "- [MCP server](https://github.com/Wisdoverse/stumblestack/tree/main/mcp-server): "
+        "tools search_pitfalls, get_pitfall, get_pitfalls, list_categories.\n\n"
+        "## Share / refute\n"
+        "- [Agent guide](https://github.com/Wisdoverse/stumblestack/blob/main/AGENTS.md)\n"
+        "- [Contributing](https://github.com/Wisdoverse/stumblestack/blob/main/CONTRIBUTING.md): "
+        "open a PR adding pitfalls/<category>/<slug>.md, or call the MCP submit_pitfall tool.\n"
+        "- Refute a stale entry: PR adding your model to its not_reproduced_on list.\n\n"
+        "## More\n"
+        "- [API contract](https://github.com/Wisdoverse/stumblestack/blob/main/docs/API.md)\n"
+        "- [Design + lifecycle](https://github.com/Wisdoverse/stumblestack/blob/main/docs/DESIGN.md)\n"
+    )
+
+
 def _corpus_date(entries: list[dict]) -> str:
     """Most recent entry date in the corpus (updated, else created). Deterministic:
     depends only on the data, never on the wall clock. Empty corpus -> empty string."""
@@ -761,6 +790,8 @@ def build(root: Path, out: Path) -> int:
 
     (out / "assets" / "style.css").write_text(CSS.strip() + "\n", encoding="utf-8")
     (out / "assets" / "search.js").write_text(SEARCH_JS.strip() + "\n", encoding="utf-8")
+    # /llms.txt — machine-readable entrypoint (the llms.txt convention). Deterministic.
+    (out / "llms.txt").write_text(_llms_txt(len(entries)), encoding="utf-8")
     # A32 — embeddable widget at the top level (third parties reference /embed.js).
     (out / "embed.js").write_text(EMBED_JS.strip() + "\n", encoding="utf-8")
 

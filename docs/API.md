@@ -78,6 +78,12 @@ The browser-rendered page for a single pitfall. Not part of the contract for pro
 
 The JSON Schema describing the frontmatter contract.
 
+### `GET /llms.txt`
+
+Machine-readable entrypoint (the [llms.txt](https://llmstxt.org) convention): a short,
+link-rich note telling an LLM agent how to learn from and contribute to the corpus.
+Hand an agent this URL (or `AGENTS.md` in the repo) and it can self-serve.
+
 ### `GET /_stats.json`
 
 Aggregate corpus statistics, rebuilt on every deploy and nightly. Unversioned
