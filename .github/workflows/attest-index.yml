@@ -1,0 +1,44 @@
+name: attest-index
+
+# #9 — sign index.json with a GitHub-native build-provenance attestation
+# (keyless, GitHub OIDC + Sigstore, stored in GitHub's attestation store).
+# No private key, no third-party account. Consumers verify with:
+#   gh attestation verify index.json --repo Wisdoverse/stumblestack
+# Runs on a published release / a v* tag, and on demand.
+
+on:
+  release:
+    types: [published]
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write        # OIDC token for keyless signing
+  attestations: write    # write the attestation to GitHub's store
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      # Rebuild deterministically and confirm it matches the committed index,
+      # so the attestation covers exactly what is in the repo.
+      - name: Rebuild index.json and assert it matches the commit
+        run: |
+          python scripts/build_index.py
+          git diff --exit-code index.json
+
+      - name: Attest index.json provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: index.json

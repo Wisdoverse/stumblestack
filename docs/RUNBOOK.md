@@ -50,23 +50,23 @@ Procedure (manual until automated):
    mirror base URL as an immediate stopgap (the MCP server already supports a
    comma-separated mirror chain with automatic failover).
 
-### Signed index (trigger: consumers need origin assurance)
+### Signed index — SHIPPED (GitHub-native attestation)
 
-Goal: cosign-sign `index.json` (keyless, GitHub OIDC) and publish the bundle so
-consumers can verify provenance without trusting raw.githubusercontent.com.
+Resolved with GitHub's own build-provenance attestation instead of standalone
+cosign: `.github/workflows/attest-index.yml` runs `actions/attest-build-provenance`
+on each release / `v*` tag (keyless, GitHub OIDC + Sigstore, stored in GitHub's
+attestation store — no private key, no third-party account). Consumers verify:
 
-Procedure: a `workflow_dispatch` + tag-gated workflow runs `cosign sign-blob
---bundle` and attaches the bundle to the GitHub Release. Resolve and SHA-pin
-`sigstore/cosign-installer` before enabling (per the SHA-pin policy). Consumers
-verify with `cosign verify-blob --bundle ... index.json` against the identity
-`.../sign-index.yml@refs/tags/v*`.
+```
+gh attestation verify index.json --repo Wisdoverse/stumblestack
+```
 
-### Update webhooks (trigger: a consumer asks for push instead of poll)
+### Update webhooks — use GitHub native (no custom service)
 
-Goal: POST `{event, entries_added:[uuid]}` to subscriber URLs (loaded from a public
-`webhooks.txt`) on each `main` push. URLs are validated as public https (the same
-rules as link validation); per-URL failures are isolated; first run with an empty
-list is a no-op.
+A custom fanout was deemed redundant: GitHub already delivers push/release events
+to subscriber endpoints with retries and HMAC signing (repo Settings → Webhooks),
+and publishes a `releases.atom` feed. See "Subscribing to updates" in docs/API.md.
+A consumer derives added-entry ids by diffing `index.json` against its snapshot.
 
 ### Embeddings backend (trigger: lexical recall proves insufficient)
 

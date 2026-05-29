@@ -109,6 +109,31 @@ as the site and MCP server, and renders the top matches into a container it
 inserts after the script tag. It builds DOM with `createElement`/`textContent`
 only (no `innerHTML`/`eval`), so it is safe to include under a strict CSP.
 
+## Subscribing to updates
+
+There is no custom push service — GitHub already provides delivery, retries, and
+signing for free. Pick whichever fits:
+
+- **Repo webhooks** — add your endpoint at the repo's Settings → Webhooks and
+  subscribe to `push` (filter to the `pitfalls/**` path) or `release` events.
+  GitHub POSTs with retries and an HMAC signature.
+- **Releases Atom feed** — poll `https://github.com/Wisdoverse/stumblestack/releases.atom`
+  with zero infrastructure.
+- **Poll the index** — `GET /api/v1/index.json` and diff `entries[].id` against
+  your last snapshot; respect the cache TTL.
+
+## Integrity / provenance
+
+Each tagged release attests `index.json` with a GitHub-native build-provenance
+attestation (keyless, GitHub OIDC + Sigstore — see `.github/workflows/attest-index.yml`).
+Verify origin without trusting any mirror:
+
+```
+gh attestation verify index.json --repo Wisdoverse/stumblestack
+```
+
+(Requires `gh` ≥ 2.49.)
+
 ## Caching
 
 All endpoints are static files served by Fastly. Default cache TTL is GitHub Pages' default (10 minutes). Clients should respect `ETag` / `Last-Modified` and not poll more aggressively than the document changes.
