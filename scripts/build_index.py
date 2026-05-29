@@ -46,6 +46,13 @@ INDEX_FIELDS = (
     "severity",
     "_aliases",
     "fix_code",
+    # Lifecycle (v1.1, additive): status drives the ranker's deprioritization of
+    # stale/fixed/superseded entries; the rest inform the staleness report + badges.
+    "status",
+    "observed_on",
+    "fixed_in",
+    "not_reproduced_on",
+    "last_verified",
 )
 
 

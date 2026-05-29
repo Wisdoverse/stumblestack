@@ -42,6 +42,21 @@ FIELD_WEIGHTS: dict[str, float] = {
     "fix_code": 1.0,
 }
 
+# Lifecycle multipliers — a non-active entry still matches but is deprioritized so
+# fresh advice ranks first. Deterministic and mirrored in eval_search.py and the
+# RANKER_JS copy in build_site.py (DESIGN.md 9c). Absent status == active == 1.0.
+STATUS_WEIGHTS: dict[str, float] = {
+    "active": 1.0,
+    "unverified-stale": 0.6,
+    "fixed-upstream": 0.4,
+    "superseded": 0.3,
+    "retired": 0.2,
+}
+
+
+def status_weight(entry: dict) -> float:
+    return STATUS_WEIGHTS.get(entry.get("status") or "active", 1.0)
+
 
 @dataclass(frozen=True)
 class Hit:
@@ -100,6 +115,9 @@ def search(
 
         verified = entry.get("verified_count") or 0
         score += min(verified, 10) * 0.1
+        # Lifecycle deprioritization (applied after the match gate so a stale
+        # entry that matches still appears, just lower).
+        score *= status_weight(entry)
 
         hits.append(Hit(entry=entry, score=score, matched_terms=sorted(matched)))
 

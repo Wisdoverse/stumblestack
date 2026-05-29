@@ -18,6 +18,8 @@ _aliases:
   - "logging to stdout corrupts JSON-RPC"
   - "garbage before JSON in MCP stdio transport"
 severity: blocker
+status: active
+last_verified: 2026-05-29
 applies_to:
   product: mcp
   surface: stdio

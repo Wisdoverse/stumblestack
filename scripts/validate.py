@@ -132,6 +132,8 @@ def main() -> int:
     errors: list[str] = []
     ids: dict[str, Path] = {}
     slugs_by_category: dict[str, dict[str, Path]] = defaultdict(dict)
+    # (rel, superseded_by, status) collected for a post-pass once all ids are known.
+    lifecycle_refs: list[tuple[Path, str | None, str | None]] = []
 
     paths = sorted(pitfalls_dir.rglob("*.md"))
     if not paths:
@@ -162,6 +164,20 @@ def main() -> int:
                 errors.append(
                     f"{rel}: verified_count ({vcount}) does not match len(verification_prs) ({len(vps)})"
                 )
+
+        # Lifecycle (v1.1): collect for the referential-integrity post-pass, and
+        # check status/superseded_by consistency. status==superseded REQUIRES a
+        # superseded_by pointer; a superseded_by present implies a non-active status.
+        status = data.get("status")
+        superseded_by = data.get("superseded_by")
+        lifecycle_refs.append((rel, superseded_by, status))
+        if status == "superseded" and not superseded_by:
+            errors.append(f"{rel}: status `superseded` requires a `superseded_by` UUID")
+        if superseded_by and status in (None, "active"):
+            errors.append(
+                f"{rel}: superseded_by is set but status is `{status or 'active'}`; "
+                "set status to superseded (or fixed-upstream/retired)"
+            )
 
         # A39 — link safety
         for url in data.get("links", []) or []:
@@ -216,6 +232,12 @@ def main() -> int:
             )
         else:
             slugs_by_category[fs_category][slug] = path
+
+    # Lifecycle post-pass: superseded_by must point to a real entry id (now that
+    # every id is known) and must not be a self-reference.
+    for rel, superseded_by, _status in lifecycle_refs:
+        if superseded_by and superseded_by not in ids:
+            errors.append(f"{rel}: superseded_by `{superseded_by}` does not match any entry id")
 
     if errors:
         for line in errors:

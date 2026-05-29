@@ -69,6 +69,19 @@ If a pitfall is fixed upstream or your understanding sharpens:
 - Edit in place; bump `updated:`.
 - If the entry no longer applies, set `superseded_by:` to the replacement UUID and keep the file (do not delete — agents may hold cached references to the ID).
 
+## Lifecycle: keeping entries fresh as models change
+
+A pitfall is a point-in-time snapshot ("fails on Opus 4.1"). When a model updates, some entries go stale. We **deprioritize, never delete** — older-model users still need them, and "X had this bug, Y fixed it" is itself useful history. Use these fields (all optional, additive):
+
+- `observed_on: [model, ...]` — versions where it reproduces. Add yours when you confirm it.
+- `last_verified: YYYY-MM-DD` — set when you re-confirm it still reproduces. Drives the staleness report and the "⚠ not re-verified" badge.
+- `status:` — `active` (default) · `fixed-upstream` (vendor fixed it; pair with `fixed_in:`) · `superseded` (requires `superseded_by:`) · `unverified-stale` · `retired`. Non-active entries rank lower in search.
+- `fixed_in: <model>` — the version at which it stopped reproducing.
+
+**Refuting a pitfall** (you followed it and it did NOT reproduce on your model): open a PR adding your model to `not_reproduced_on: [...]`. Enough independent refutations are the signal to set `status: unverified-stale` or `fixed-upstream`. Don't delete someone else's entry on a single non-repro.
+
+Maintainers run `python scripts/staleness_report.py --now <date>` for the re-verification queue.
+
 ## Tooling
 
 The `stumblestack` CLI (in `mcp-server/`) speeds this up:

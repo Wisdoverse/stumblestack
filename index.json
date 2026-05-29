@@ -610,6 +610,13 @@
       "model_version": "o1 / o3 / o4 (2025+)",
       "verified_count": 0,
       "created": "2026-05-28",
+      "status": "active",
+      "observed_on": [
+        "o1",
+        "o3",
+        "o4"
+      ],
+      "last_verified": "2026-05-29",
       "path": "pitfalls/openai-api/openai-reasoning-models-reject-max-tokens-they-require-max-c.md"
     },
     {
@@ -935,6 +942,8 @@
         "language": "python",
         "code": "import sys\nprint(\"server started\", file=sys.stderr)"
       },
+      "status": "active",
+      "last_verified": "2026-05-29",
       "path": "pitfalls/mcp/mcp-stdio-server-corrupts-the-protocol-by-writing-logs-to-st.md"
     },
     {

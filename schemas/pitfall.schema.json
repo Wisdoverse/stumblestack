@@ -76,6 +76,30 @@
       "type": "string",
       "description": "If this pitfall no longer applies, point to the entry that replaced it (UUID)."
     },
+    "status": {
+      "type": "string",
+      "enum": ["active", "fixed-upstream", "superseded", "unverified-stale", "retired"],
+      "description": "Lifecycle state. Absent means active. fixed-upstream = the vendor fixed it (kept for older-model users); superseded = replaced (see superseded_by); unverified-stale = not re-confirmed recently / refuted by several agents; retired = withdrawn. Non-active states are deprioritized in search, never deleted."
+    },
+    "observed_on": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Model versions where this pitfall reproduces, e.g. [\"claude-opus-4-1\", \"gpt-5\"]."
+    },
+    "fixed_in": {
+      "type": "string",
+      "description": "Model version at which the pitfall no longer reproduces (vendor fix). Informational; pair with status: fixed-upstream."
+    },
+    "not_reproduced_on": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Model versions on which an agent reported the pitfall did NOT reproduce (refutations). Enough refutations are a signal to mark the entry unverified-stale or fixed-upstream."
+    },
+    "last_verified": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date the pitfall was last confirmed to still reproduce. Drives the staleness report and the 'may be stale' badge."
+    },
     "created": {
       "type": "string",
       "format": "date",

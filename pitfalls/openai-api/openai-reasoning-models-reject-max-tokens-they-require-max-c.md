@@ -13,6 +13,12 @@ root_cause: "Reasoning models (o1, o3, o4 family) count hidden reasoning tokens 
 fix: "Use `max_completion_tokens` for reasoning models. Budget extra headroom because reasoning tokens are consumed before any visible output."
 verified_count: 0
 model_version: "o1 / o3 / o4 (2025+)"
+status: active
+observed_on:
+  - "o1"
+  - "o3"
+  - "o4"
+last_verified: 2026-05-29
 created: 2026-05-28
 ---
 

@@ -33,6 +33,14 @@ FIELD_WEIGHTS = {
     "category": 1.0,
     "fix_code": 1.0,
 }
+# Mirror of search.STATUS_WEIGHTS (DESIGN.md 9c; parity test enforces equality).
+STATUS_WEIGHTS = {
+    "active": 1.0,
+    "unverified-stale": 0.6,
+    "fixed-upstream": 0.4,
+    "superseded": 0.3,
+    "retired": 0.2,
+}
 
 
 def _tokens(text: str):
@@ -71,6 +79,7 @@ def rank(entries, query, top_k):
         if score <= 0:
             continue
         score += min(e.get("verified_count") or 0, 10) * 0.1
+        score *= STATUS_WEIGHTS.get(e.get("status") or "active", 1.0)
         scored.append((score, e.get("id"), e))
     scored.sort(key=lambda r: (-r[0], r[1] or ""))
     return [e_id for _, e_id, _ in scored[:top_k]]

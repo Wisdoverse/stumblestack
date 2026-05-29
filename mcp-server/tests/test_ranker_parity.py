@@ -19,9 +19,14 @@ def _corpus():
         {"id": "c", "title": "reasoning model rejects max_tokens", "symptoms": ["use max_completion_tokens"],
          "tags": ["openai"], "root_cause": "renamed", "category": "openai-api", "verified_count": 0},
         {"id": "d", "title": "git reset hard data loss", "symptoms": ["uncommitted gone"],
-         "tags": ["git"], "root_cause": "overwrites tree", "category": "git", "verified_count": 1},
+         "tags": ["git"], "root_cause": "overwrites tree", "category": "git", "verified_count": 1,
+         "status": "fixed-upstream"},
         {"id": "e", "title": "unrelated entry", "symptoms": ["nothing"],
-         "tags": ["misc"], "root_cause": "n/a", "category": "misc", "verified_count": 9},
+         "tags": ["misc"], "root_cause": "n/a", "category": "misc", "verified_count": 9,
+         "status": "superseded"},
+        {"id": "f2", "title": "max_tokens stale alias", "symptoms": ["field required"],
+         "tags": ["api"], "root_cause": "param", "category": "anthropic-api", "verified_count": 0,
+         "status": "unverified-stale", "_aliases": ["token field missing"]},
     ]
 
 

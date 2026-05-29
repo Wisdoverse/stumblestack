@@ -201,6 +201,49 @@ Field weights:
 
 Tiebreak: ascending by `id`. Empty query returns no hits.
 
+After the base+verified score, a **lifecycle status multiplier** is applied so stale
+advice ranks below fresh advice (identical in all three ranker copies):
+
+| status | multiplier |
+|--------|-----------|
+| `active` (or absent) | 1.0 |
+| `unverified-stale` | 0.6 |
+| `fixed-upstream` | 0.4 |
+| `superseded` | 0.3 |
+| `retired` | 0.2 |
+
+A non-active entry still appears (it is never filtered or deleted), just lower.
+
+## 9d. Entry lifecycle — staleness as models change (v1.1)
+
+A pitfall is a point-in-time snapshot. When a model updates, some entries stop
+reproducing. The system **deprioritizes, never deletes** — older-model users still
+need them, and "version X had this, Y fixed it" is useful history with a stable id.
+
+Fields (all optional, additive — `schema_version` stays 1):
+
+- `status` — `active` | `fixed-upstream` | `superseded` | `unverified-stale` | `retired`. Drives the §9c multiplier.
+- `observed_on` / `fixed_in` — model versions where it reproduces / was fixed.
+- `last_verified` — last date the pitfall was confirmed to still reproduce.
+- `not_reproduced_on` — model versions where an agent reported it did NOT reproduce (refutations).
+
+Detection (three paths, defense in depth):
+
+1. **Passive crowdsourcing.** An agent that follows a pitfall and finds it no longer
+   reproduces opens a refutation PR adding its model to `not_reproduced_on`. Enough
+   independent refutations are the signal to flip `status` to `unverified-stale` or
+   `fixed-upstream`. CONTRIBUTING documents this.
+2. **Maintainer queue.** `scripts/staleness_report.py --now <date>` flags entries that
+   are non-active, aged past a threshold without `last_verified`, or accumulating
+   refutations. Deterministic (clock injected) so it runs in CI.
+3. **Active verifier** (deferred, needs model API keys): a scheduled job re-runs a
+   golden reproduction against current models and updates `last_verified` / `fixed_in`.
+
+CI invariants (validate.py): `status: superseded` requires a `superseded_by`; a
+`superseded_by` must reference a real entry id; a `superseded_by` implies a non-active
+status. The browser, the MCP server (`_format_hit` surfaces `status`/`fixed_in`/
+`last_verified`), and the site badges all reflect lifecycle state.
+
 Reviewing maintainers MUST cite this section when approving a `search.py` or `search.js` change, and MUST report `precision@5` / `recall@10` against `eval/queries.jsonl` once that eval set exists (A13).
 
 ## 10. Open questions

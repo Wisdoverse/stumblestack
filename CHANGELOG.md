@@ -10,6 +10,17 @@ separately and is intentionally decoupled — the package is not published to Py
 
 ## [Unreleased]
 
+### Added
+- **Entry lifecycle (staleness management as models change).** Additive optional
+  fields `status`, `observed_on`, `fixed_in`, `not_reproduced_on`, `last_verified`
+  (`schema_version` stays 1). Search applies a status multiplier so stale/fixed/
+  superseded entries rank below active ones (never deleted). New
+  `scripts/staleness_report.py` produces a deterministic maintainer re-verification
+  queue; the site shows status + "not re-verified" badges; `validate.py` enforces
+  `superseded_by` referential integrity. Provenance signing via GitHub-native
+  attestation (`.github/workflows/attest-index.yml`); update notifications via
+  native GitHub webhooks / releases.atom (see API.md). See DESIGN.md §9d.
+
 ## [1.0.0] - 2026-05-28
 
 First tagged release. The corpus, the validation/CI pipeline, the static site at

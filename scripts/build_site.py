@@ -342,6 +342,18 @@ footer a { color: var(--muted); }
   margin-right: 0.3rem;
 }
 .entry-list .sev { margin-right: 0.3rem; }
+.status {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+.status-fixed-upstream { background: #2ea04322; color: #3fb950; }
+.status-superseded { background: #8957e522; color: #d2a8ff; }
+.status-unverified-stale, .status-stale { background: #9e6a0322; color: #d29922; }
+.status-retired { background: var(--code-bg); color: var(--muted); }
 """
 
 # The ranker JS — WEIGHTS, tokenizer, fieldText, score — kept byte-identical to
@@ -351,6 +363,7 @@ RANKER_JS = r"""// Mirrors stumblestack_mcp/search.py exactly (see docs/DESIGN.m
 // The verified_count bonus is added ONLY when the lexical base score is > 0,
 // and the sort tiebreak is ascending id — both must match search.py.
 const WEIGHTS = { title: 3.0, symptoms: 4.0, _aliases: 3.5, tags: 2.0, root_cause: 1.5, category: 1.0, fix_code: 1.0 };
+const STATUS_WEIGHTS = { "active": 1.0, "unverified-stale": 0.6, "fixed-upstream": 0.4, "superseded": 0.3, "retired": 0.2 };
 const TOKEN_RE = /[a-z0-9]+/g;
 function tokenize(s) { return s.toLowerCase().match(TOKEN_RE) || []; }
 function fieldText(entry, field) {
@@ -381,6 +394,7 @@ function score(entry, terms, rawQuery) {
   // No lexical match => excluded, regardless of verified_count (mirrors search.py).
   if (s <= 0) return { score: 0, matched: [] };
   s += Math.min(entry.verified_count || 0, 10) * 0.1;
+  s *= (STATUS_WEIGHTS[entry.status || "active"] != null ? STATUS_WEIGHTS[entry.status || "active"] : 1.0);
   return { score: s, matched: Array.from(matched) };
 }
 """
@@ -613,8 +627,41 @@ def _render_applies_to(applies_to) -> str:
     return "".join(chips)
 
 
-def _render_frontmatter(record: dict) -> str:
+_STALE_DAYS = 180
+
+
+def _months_since(last_verified: str, ref_date: str) -> int | None:
+    """Whole days between last_verified and the corpus reference date. Deterministic
+    (no wall clock); ref_date is the corpus date passed by build()."""
+    try:
+        lv = _dt.date.fromisoformat(str(last_verified)[:10])
+        ref = _dt.date.fromisoformat(str(ref_date)[:10])
+    except (ValueError, TypeError):
+        return None
+    return (ref - lv).days
+
+
+def _status_badge(record: dict, ref_date: str) -> str:
+    status = record.get("status") or "active"
+    parts = []
+    if status != "active":
+        label = _esc(status)
+        if status == "fixed-upstream" and record.get("fixed_in"):
+            label = f"fixed in {_esc(record['fixed_in'])}"
+        parts.append(f'<span class="status status-{_esc(status)}">{label}</span>')
+    lv = record.get("last_verified")
+    if lv:
+        age = _months_since(lv, ref_date)
+        if age is not None and age > _STALE_DAYS:
+            parts.append(f'<span class="status status-stale">⚠ not re-verified in {age // 30} mo</span>')
+    return "".join(parts)
+
+
+def _render_frontmatter(record: dict, ref_date: str = "") -> str:
     rows: list[str] = []
+    status_html = _status_badge(record, ref_date)
+    if status_html:
+        rows.append(f"<div><dt>status</dt><dd>{status_html}</dd></div>")
     if record.get("severity"):
         rows.append(f"<div><dt>severity</dt><dd>{_severity_badge(record['severity'])}</dd></div>")
 
@@ -623,14 +670,22 @@ def _render_frontmatter(record: dict) -> str:
         ("agent", "agent"),
         ("model_version", "model"),
         ("verified_count", "verified"),
+        ("last_verified", "last verified"),
         ("created", "created"),
         ("updated", "updated"),
         ("superseded_by", "superseded by"),
+        ("fixed_in", "fixed in"),
     )
     for key, label in field_order:
         if record.get(key) in (None, ""):
             continue
         rows.append(f"<div><dt>{label}</dt><dd>{_esc(record[key])}</dd></div>")
+
+    for key, label in (("observed_on", "observed on"), ("not_reproduced_on", "not reproduced on")):
+        vals = record.get(key)
+        if vals:
+            chips = "".join(f'<span class="applies-chip">{_esc(v)}</span>' for v in vals)
+            rows.append(f"<div><dt>{label}</dt><dd>{chips}</dd></div>")
 
     applies_html = _render_applies_to(record.get("applies_to"))
     if applies_html:
@@ -750,7 +805,7 @@ def build(root: Path, out: Path) -> int:
             description=_esc(description),
             category=_esc(frontmatter.get("category", "")),
             tags_html=_render_tags(frontmatter.get("tags", [])),
-            frontmatter_rows=_render_frontmatter(frontmatter),
+            frontmatter_rows=_render_frontmatter(frontmatter, ref_date=updated),
             body_html=body_html,
             source_path=_esc(source_rel),
         )
