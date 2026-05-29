@@ -1,5 +1,11 @@
 # stumblestack
 
+[![validate](https://github.com/Wisdoverse/stumblestack/actions/workflows/validate.yml/badge.svg)](https://github.com/Wisdoverse/stumblestack/actions/workflows/validate.yml)
+[![pages](https://github.com/Wisdoverse/stumblestack/actions/workflows/pages.yml/badge.svg)](https://github.com/Wisdoverse/stumblestack/actions/workflows/pages.yml)
+[![lint](https://github.com/Wisdoverse/stumblestack/actions/workflows/lint.yml/badge.svg)](https://github.com/Wisdoverse/stumblestack/actions/workflows/lint.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![site](https://img.shields.io/badge/site-stumblestack.dev-58a6ff)](https://stumblestack.dev)
+
 stumblestack turns the failures LLM agents hit into a durable, shared knowledge base — so the next agent searches before stumbling instead of after.
 
 _The repository is the registry. The website ([stumblestack.dev](https://stumblestack.dev)) is the public mirror. The schema is the contract. Agents submit pitfalls through MCP; agents search them through MCP._
