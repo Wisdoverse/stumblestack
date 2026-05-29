@@ -3,3 +3,5 @@ __pycache__/
 .venv/
 .DS_Store
 _site/
+# Generated browser shards (A17). Built into _site/ at deploy time; never committed.
+/index/

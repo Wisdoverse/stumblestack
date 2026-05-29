@@ -401,6 +401,18 @@ function score(entry, terms, rawQuery) {
 
 SEARCH_JS = RANKER_JS + r"""
 async function load() {
+  // A17 — if the index is sharded, load the small manifest + per-category shards
+  // (parallel) instead of one large index.json. Falls back to index.json otherwise.
+  try {
+    const mr = await fetch("index/_manifest.json");
+    if (mr.ok) {
+      const manifest = await mr.json();
+      const parts = await Promise.all(
+        (manifest.shards || []).map(s => fetch(s.path).then(r => r.json()))
+      );
+      return parts.flatMap(p => p.entries || []);
+    }
+  } catch (e) { /* fall through to the full index */ }
   const r = await fetch("index.json");
   return (await r.json()).entries || [];
 }
@@ -754,6 +766,12 @@ def build(root: Path, out: Path) -> int:
 
     shutil.copy(index_path, out / "index.json")
     shutil.copy(index_path, out / "api" / "v1" / "index.json")
+    # A17 — if build_index sharded, publish the shard dir at both the top level
+    # (search.js consumes it) and under the versioned API path.
+    shard_src = root / "index"
+    if shard_src.is_dir():
+        shutil.copytree(shard_src, out / "index")
+        shutil.copytree(shard_src, out / "api" / "v1" / "index")
     schema_src = root / "schemas" / "pitfall.schema.json"
     if schema_src.exists():
         shutil.copy(schema_src, out / "schemas" / "pitfall.schema.json")
